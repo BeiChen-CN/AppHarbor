@@ -79,6 +79,14 @@
     <string name="theme_summary">外观与导航行为</string>
     <string name="theme_enable_blur">模糊</string>
     <string name="theme_enable_blur_summary">在支持的设备上使用模糊表面</string>
+    <string name="theme_color_scheme">配色方案</string>
+    <string name="theme_color_scheme_summary">静态配色或 Monet 动态取色</string>
+    <string name="theme_color_scheme_system">跟随系统</string>
+    <string name="theme_color_scheme_light">浅色</string>
+    <string name="theme_color_scheme_dark">深色</string>
+    <string name="theme_color_scheme_monet_system">动态取色（跟随系统）</string>
+    <string name="theme_color_scheme_monet_light">动态取色（浅色）</string>
+    <string name="theme_color_scheme_monet_dark">动态取色（深色）</string>
     <string name="theme_floating_bottom_bar">悬浮底栏</string>
     <string name="theme_floating_bottom_bar_summary">将底部导航栏替换为悬浮样式</string>
     <string name="theme_enable_glass">液态玻璃</string>
@@ -116,6 +124,7 @@
     <string name="source_honor">荣耀</string>
     <string name="source_huawei">华为</string>
     <string name="source_taptap">TapTap</string>
+    <string name="source_kuaibao">好游快爆</string>
     <string name="historical_versions">历史版本</string>
     <string name="historical_versions_summary">查看全部版本</string>
     <string name="historical_versions_title">%1$s的历史版本</string>
@@ -234,6 +243,7 @@
     <string name="about">关于</string>
     <string name="about_summary">版本信息与项目地址</string>
     <string name="about_title">关于</string>
+    <string name="about_author_name">作者：%1$s</string>
     <string name="about_open_source_licenses">开放源代码许可</string>
 
     <!-- Update history -->

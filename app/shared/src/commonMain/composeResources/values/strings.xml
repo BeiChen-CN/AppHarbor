@@ -78,6 +78,14 @@
     <string name="theme_summary">Appearance and navigation behavior</string>
     <string name="theme_enable_blur">Blur</string>
     <string name="theme_enable_blur_summary">Use blurred surfaces where supported</string>
+    <string name="theme_color_scheme">Color scheme</string>
+    <string name="theme_color_scheme_summary">Static palettes or Monet dynamic color</string>
+    <string name="theme_color_scheme_system">Follow system</string>
+    <string name="theme_color_scheme_light">Light</string>
+    <string name="theme_color_scheme_dark">Dark</string>
+    <string name="theme_color_scheme_monet_system">Dynamic color (follow system)</string>
+    <string name="theme_color_scheme_monet_light">Dynamic color (light)</string>
+    <string name="theme_color_scheme_monet_dark">Dynamic color (dark)</string>
     <string name="theme_floating_bottom_bar">Floating bottom bar</string>
     <string name="theme_floating_bottom_bar_summary">Use a floating style for the bottom navigation bar</string>
     <string name="theme_enable_glass">Liquid glass</string>
@@ -115,6 +123,7 @@
     <string name="source_honor">Honor</string>
     <string name="source_huawei">Huawei</string>
     <string name="source_taptap">TapTap</string>
+    <string name="source_kuaibao">Haoyou Kuaibao</string>
     <string name="historical_versions">Historical versions</string>
     <string name="historical_versions_summary">View all versions</string>
     <string name="historical_versions_title">%1$s versions</string>
@@ -233,6 +242,7 @@
     <string name="about">About</string>
     <string name="about_summary">Version info and project link</string>
     <string name="about_title">About</string>
+    <string name="about_author_name">Author: %1$s</string>
     <string name="about_open_source_licenses">Open source licenses</string>
 
     <!-- Update history -->

@@ -3,6 +3,7 @@ package com.app.market.viewmodel
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.market.domain.repository.ColorSchemeModeTokens
 import com.app.market.domain.repository.ThemePreferencesRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -12,9 +13,10 @@ import kotlinx.coroutines.launch
 
 @Immutable
 data class ThemeSettingsUiState(
-    val enableBlur: Boolean = false,
-    val enableFloatingBottomBar: Boolean = false,
-    val enableFloatingBottomBarBlur: Boolean = false,
+    val colorSchemeMode: String = ColorSchemeModeTokens.Default,
+    val enableBlur: Boolean = true,
+    val enableFloatingBottomBar: Boolean = true,
+    val enableFloatingBottomBarBlur: Boolean = true,
     val enableNavigationBadge: Boolean = true,
     val enablePredictiveBack: Boolean = false,
     val pageScale: Float = 1f,
@@ -23,8 +25,12 @@ data class ThemeSettingsUiState(
 class ThemeSettingsViewModel(
     private val preferences: ThemePreferencesRepository,
 ) : ViewModel() {
-    private val appearance = combine(preferences.enableBlur, preferences.enableFloatingBottomBar) { blur, floating ->
-        blur to floating
+    private val appearance = combine(
+        preferences.colorSchemeMode,
+        preferences.enableBlur,
+        preferences.enableFloatingBottomBar,
+    ) { mode, blur, floating ->
+        ThemeAppearance(mode, blur, floating)
     }
 
     val uiState: StateFlow<ThemeSettingsUiState> = combine(
@@ -35,8 +41,9 @@ class ThemeSettingsViewModel(
         preferences.pageScale,
     ) { appearance, glass, badge, predictiveBack, scale ->
         ThemeSettingsUiState(
-            enableBlur = appearance.first,
-            enableFloatingBottomBar = appearance.second,
+            colorSchemeMode = appearance.colorSchemeMode,
+            enableBlur = appearance.enableBlur,
+            enableFloatingBottomBar = appearance.enableFloatingBottomBar,
             enableFloatingBottomBarBlur = glass,
             enableNavigationBadge = badge,
             enablePredictiveBack = predictiveBack,
@@ -44,6 +51,13 @@ class ThemeSettingsViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeSettingsUiState())
 
+    private data class ThemeAppearance(
+        val colorSchemeMode: String,
+        val enableBlur: Boolean,
+        val enableFloatingBottomBar: Boolean,
+    )
+
+    fun setColorSchemeMode(value: String) = persist { preferences.setColorSchemeMode(value) }
     fun setEnableBlur(value: Boolean) = persist { preferences.setEnableBlur(value) }
     fun setEnableFloatingBottomBar(value: Boolean) = persist { preferences.setEnableFloatingBottomBar(value) }
     fun setEnableFloatingBottomBarBlur(value: Boolean) = persist { preferences.setEnableFloatingBottomBarBlur(value) }

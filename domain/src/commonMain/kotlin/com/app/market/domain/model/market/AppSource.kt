@@ -107,6 +107,19 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             todayFullCoverOverlay = false,
             supportsUpdates = true,
         ),
+    ),
+    KUAIBAO(
+        "kuaibao",
+        SourceCapabilities(
+            supportsComments = true,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            // 网页渠道不暴露版本号，无独立更新协议，更新下载与手动更新均回退小米
+            supportsUpdates = false,
+        ),
     );
 
     companion object {

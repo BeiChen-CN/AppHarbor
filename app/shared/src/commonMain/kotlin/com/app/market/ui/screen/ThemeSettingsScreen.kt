@@ -23,8 +23,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.app.market.platform.isBlurSettingSupported
 import com.app.market.platform.isPredictiveBackSupported
+import com.app.market.domain.repository.ColorSchemeModeTokens
 import com.app.market.resources.Res
 import com.app.market.resources.theme
+import com.app.market.resources.theme_color_scheme
+import com.app.market.resources.theme_color_scheme_summary
+import com.app.market.resources.theme_color_scheme_dark
+import com.app.market.resources.theme_color_scheme_light
+import com.app.market.resources.theme_color_scheme_monet_dark
+import com.app.market.resources.theme_color_scheme_monet_light
+import com.app.market.resources.theme_color_scheme_monet_system
+import com.app.market.resources.theme_color_scheme_system
 import com.app.market.resources.theme_enable_blur
 import com.app.market.resources.theme_enable_blur_summary
 import com.app.market.resources.theme_enable_glass
@@ -49,9 +58,21 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+
+/** 配色模式 token → 设置项文案。 */
+@Composable
+private fun colorSchemeModeLabel(token: String): String = when (token) {
+    ColorSchemeModeTokens.Light -> stringResource(Res.string.theme_color_scheme_light)
+    ColorSchemeModeTokens.Dark -> stringResource(Res.string.theme_color_scheme_dark)
+    ColorSchemeModeTokens.MonetSystem -> stringResource(Res.string.theme_color_scheme_monet_system)
+    ColorSchemeModeTokens.MonetLight -> stringResource(Res.string.theme_color_scheme_monet_light)
+    ColorSchemeModeTokens.MonetDark -> stringResource(Res.string.theme_color_scheme_monet_dark)
+    else -> stringResource(Res.string.theme_color_scheme_system)
+}
 
 @Composable
 fun ThemeSettingsScreen(
@@ -63,6 +84,7 @@ fun ThemeSettingsScreen(
     ThemeSettingsContent(
         state = state,
         onBack = onBack,
+        onColorSchemeMode = viewModel::setColorSchemeMode,
         onEnableBlur = viewModel::setEnableBlur,
         onEnableFloatingBottomBar = viewModel::setEnableFloatingBottomBar,
         onEnableFloatingBottomBarBlur = viewModel::setEnableFloatingBottomBarBlur,
@@ -79,6 +101,7 @@ fun ThemeSettingsScreen(
 private fun ThemeSettingsContent(
     state: ThemeSettingsUiState,
     onBack: () -> Unit,
+    onColorSchemeMode: (String) -> Unit,
     onEnableBlur: (Boolean) -> Unit,
     onEnableFloatingBottomBar: (Boolean) -> Unit,
     onEnableFloatingBottomBarBlur: (Boolean) -> Unit,
@@ -112,12 +135,28 @@ private fun ThemeSettingsContent(
                 bottom = innerPadding.calculateBottomPadding() + PageVerticalPadding,
             ),
         ) {
+            item(key = "color-scheme") {
+                CardSegmentContainer(
+                    isFirst = true,
+                    isLast = true,
+                    horizontalPadding = 0.dp,
+                ) {
+                    WindowDropdownPreference(
+                        title = stringResource(Res.string.theme_color_scheme),
+                        summary = stringResource(Res.string.theme_color_scheme_summary),
+                        items = ColorSchemeModeTokens.All.map { colorSchemeModeLabel(it) },
+                        selectedIndex = ColorSchemeModeTokens.All.indexOf(state.colorSchemeMode).coerceAtLeast(0),
+                        onSelectedIndexChange = { onColorSchemeMode(ColorSchemeModeTokens.All[it]) },
+                    )
+                }
+            }
             if (blurSupported) {
                 item(key = "blur") {
                     CardSegmentContainer(
                         isFirst = true,
                         isLast = false,
                         horizontalPadding = 0.dp,
+                        modifier = Modifier.padding(top = PageVerticalPadding),
                     ) {
                         SwitchPreference(
                             title = stringResource(Res.string.theme_enable_blur),
@@ -133,6 +172,7 @@ private fun ThemeSettingsContent(
                     isFirst = !blurSupported,
                     isLast = false,
                     horizontalPadding = 0.dp,
+                    modifier = if (!blurSupported) Modifier.padding(top = PageVerticalPadding) else Modifier,
                 ) {
                     SwitchPreference(
                         title = stringResource(Res.string.theme_floating_bottom_bar),

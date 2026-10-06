@@ -46,13 +46,13 @@ import com.app.market.ui.theme.LocalEnableBlur
 import com.app.market.ui.theme.LocalEnableFloatingBottomBar
 import com.app.market.ui.theme.LocalEnableFloatingBottomBarBlur
 import com.app.market.ui.theme.LocalEnableNavigationBadge
+import com.app.market.ui.theme.parseColorSchemeMode
 import com.app.market.ui.util.LocalStripAppNameSubtitle
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -73,6 +73,7 @@ fun App(
     val uiPlatform = koinInject<UiPlatform>()
     val updatePrefs = koinInject<UpdatePreferencesRepository>()
     val themePrefs = koinInject<ThemePreferencesRepository>()
+    val colorSchemeModeToken by themePrefs.colorSchemeMode.collectAsStateWithLifecycle()
     val enableBlur by themePrefs.enableBlur.collectAsStateWithLifecycle()
     val enableFloatingBottomBar by themePrefs.enableFloatingBottomBar.collectAsStateWithLifecycle()
     val enableFloatingBottomBarBlur by themePrefs.enableFloatingBottomBarBlur.collectAsStateWithLifecycle()
@@ -99,7 +100,8 @@ fun App(
         }
     }
     LaunchedEffect(Unit) { runCatching { profileStore.syncFromServerIfDue() } }
-    val controller = remember { ThemeController(ColorSchemeMode.System) }
+    val colorSchemeMode = remember(colorSchemeModeToken) { parseColorSchemeMode(colorSchemeModeToken) }
+    val controller = remember(colorSchemeMode) { ThemeController(colorSchemeMode) }
     ApplyPredictiveBackPreference(enablePredictiveBack)
     MiuixTheme(controller = controller) {
         val systemDensity = LocalDensity.current

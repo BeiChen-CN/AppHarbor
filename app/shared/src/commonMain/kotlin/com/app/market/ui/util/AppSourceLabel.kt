@@ -5,6 +5,7 @@ import com.app.market.domain.model.market.AppSource
 import com.app.market.resources.Res
 import com.app.market.resources.source_honor
 import com.app.market.resources.source_huawei
+import com.app.market.resources.source_kuaibao
 import com.app.market.resources.source_oppo
 import com.app.market.resources.source_samsung
 import com.app.market.resources.source_taptap
@@ -23,4 +24,5 @@ fun appSourceLabel(source: AppSource): String = when (source) {
     AppSource.HONOR -> stringResource(Res.string.source_honor)
     AppSource.HUAWEI -> stringResource(Res.string.source_huawei)
     AppSource.TAPTAP -> stringResource(Res.string.source_taptap)
+    AppSource.KUAIBAO -> stringResource(Res.string.source_kuaibao)
 }

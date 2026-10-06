@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.market.resources.Res
+import com.app.market.resources.about_author_name
 import com.app.market.resources.about_open_source_licenses
 import com.app.market.resources.about_title
 import com.app.market.resources.app_name
@@ -290,6 +291,20 @@ private fun AboutContent(
                     },
                 color = colorScheme.onSurfaceVariantSummary,
                 text = "v${misc.VersionInfo.VERSION_NAME} (${misc.VersionInfo.VERSION_CODE})",
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 3.dp)
+                    .graphicsLayer {
+                        alpha = 1 - versionCodeProgress()
+                        scaleX = 1 - versionCodeProgress() * 0.05f
+                        scaleY = 1 - versionCodeProgress() * 0.05f
+                    },
+                color = colorScheme.onSurfaceVariantSummary,
+                text = stringResource(Res.string.about_author_name, "姜北尘"),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
             )

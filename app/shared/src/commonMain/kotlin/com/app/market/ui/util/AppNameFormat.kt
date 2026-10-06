@@ -15,7 +15,8 @@ private val OppoAppDescription = Regex("（([^（）]*)）$")
 fun String.splitAppDisplayName(source: AppSource?): AppDisplayName {
     val unchanged = AppDisplayName(this, "")
     return when (source) {
-        AppSource.XIAOMI, AppSource.VIVO -> {
+        // 好游快爆名称形如「原神(官服)-六周年版本」，副标题承载版本营销语
+        AppSource.XIAOMI, AppSource.VIVO, AppSource.KUAIBAO -> {
             val separator = indexOf('-')
             if (separator <= 0) return unchanged
             val appName = substring(0, separator).trim()

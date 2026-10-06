@@ -6,6 +6,8 @@ import com.app.market.data.remote.honor.HonorApi
 import com.app.market.data.remote.honor.HonorProtocol
 import com.app.market.data.remote.huawei.HuaweiApi
 import com.app.market.data.remote.huawei.HuaweiProtocol
+import com.app.market.data.remote.kuaibao.KuaibaoApi
+import com.app.market.data.remote.kuaibao.KuaibaoApiConfig
 import com.app.market.data.remote.oppo.OppoApi
 import com.app.market.data.remote.samsung.SamsungApi
 import com.app.market.data.remote.taptap.TapTapApi
@@ -22,6 +24,7 @@ import com.app.market.data.remote.xiaomi.XiaomiHttpClient
 import com.app.market.data.repository.AnonymousAccountRepositoryImpl
 import com.app.market.data.repository.HonorRepositoryImpl
 import com.app.market.data.repository.HuaweiRepositoryImpl
+import com.app.market.data.repository.KuaibaoRepositoryImpl
 import com.app.market.data.repository.MarketRepositoryImpl
 import com.app.market.data.repository.MarketSourceRepositoryImpl
 import com.app.market.data.repository.OppoRepositoryImpl
@@ -39,6 +42,7 @@ import com.app.market.domain.repository.AccountRepository
 import com.app.market.domain.repository.DownloadRepository
 import com.app.market.domain.repository.HonorRepository
 import com.app.market.domain.repository.HuaweiRepository
+import com.app.market.domain.repository.KuaibaoRepository
 import com.app.market.domain.repository.MarketRepository
 import com.app.market.domain.repository.MarketSourceRepository
 import com.app.market.domain.repository.OppoRepository
@@ -105,6 +109,9 @@ private val commonDataModule = module {
     single { TapTapApiConfig() }
     singleOf(::TapTapApi)
     singleOf(::TapTapRepositoryImpl) { bind<TapTapRepository>() }
+    single { KuaibaoApiConfig() }
+    singleOf(::KuaibaoApi)
+    singleOf(::KuaibaoRepositoryImpl) { bind<KuaibaoRepository>() }
     singleOf(::MarketSourceRepositoryImpl) { bind<MarketSourceRepository>() }
 
     singleOf(::RecordingDownloadRepositoryImpl) { bind<DownloadRepository>() }

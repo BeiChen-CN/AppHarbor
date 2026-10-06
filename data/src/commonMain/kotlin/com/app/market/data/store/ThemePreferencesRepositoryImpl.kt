@@ -4,6 +4,7 @@ import com.app.market.data.local.PreferencesDataSource
 import com.app.market.data.local.preferences.ThemePreferenceKeys
 import com.app.market.data.platform.ThemePlatformPreferences
 import com.app.market.data.platform.debugLog
+import com.app.market.domain.repository.ColorSchemeModeTokens
 import com.app.market.domain.repository.ThemePreferencesRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -21,11 +22,13 @@ internal class ThemePreferencesRepositoryImpl(
 ) : ThemePreferencesRepository {
     private val _initialized = MutableStateFlow(false)
     override val initialized: StateFlow<Boolean> = _initialized.asStateFlow()
+    private val _colorSchemeMode = MutableStateFlow(ColorSchemeModeTokens.Default)
+    override val colorSchemeMode: StateFlow<String> = _colorSchemeMode.asStateFlow()
     private val _enableBlur = MutableStateFlow(ThemePreferenceKeys.EnableBlur.default)
     override val enableBlur: StateFlow<Boolean> = _enableBlur.asStateFlow()
-    private val _enableFloatingBottomBar = MutableStateFlow(false)
+    private val _enableFloatingBottomBar = MutableStateFlow(ThemePreferenceKeys.EnableFloatingBottomBar.default)
     override val enableFloatingBottomBar: StateFlow<Boolean> = _enableFloatingBottomBar.asStateFlow()
-    private val _enableFloatingBottomBarBlur = MutableStateFlow(false)
+    private val _enableFloatingBottomBarBlur = MutableStateFlow(ThemePreferenceKeys.EnableFloatingBottomBarBlur.default)
     override val enableFloatingBottomBarBlur: StateFlow<Boolean> = _enableFloatingBottomBarBlur.asStateFlow()
     private val _enableNavigationBadge = MutableStateFlow(ThemePreferenceKeys.EnableNavigationBadge.default)
     override val enableNavigationBadge: StateFlow<Boolean> = _enableNavigationBadge.asStateFlow()
@@ -38,6 +41,9 @@ internal class ThemePreferencesRepositoryImpl(
 
     init {
         val arrivals = listOf(
+            observe("colorSchemeMode", preferences.observe(ThemePreferenceKeys.ColorSchemeMode)) {
+                _colorSchemeMode.value = ColorSchemeModeTokens.fromToken(it)
+            },
             observe("enableBlur", preferences.observe(ThemePreferenceKeys.EnableBlur)) { _enableBlur.value = it },
             observe("enableFloatingBottomBar", preferences.observe(ThemePreferenceKeys.EnableFloatingBottomBar)) {
                 _enableFloatingBottomBar.value = it
@@ -86,6 +92,9 @@ internal class ThemePreferencesRepositoryImpl(
         }
         return firstValue
     }
+
+    override suspend fun setColorSchemeMode(value: String) =
+        preferences.put(ThemePreferenceKeys.ColorSchemeMode, ColorSchemeModeTokens.fromToken(value))
 
     override suspend fun setEnableBlur(value: Boolean) = preferences.put(ThemePreferenceKeys.EnableBlur, value)
     override suspend fun setEnableFloatingBottomBar(value: Boolean) = preferences.put(ThemePreferenceKeys.EnableFloatingBottomBar, value)
