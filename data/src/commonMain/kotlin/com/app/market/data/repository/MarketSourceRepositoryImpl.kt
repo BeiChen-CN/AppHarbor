@@ -4,12 +4,16 @@ import com.app.market.domain.model.download.DownloadMeta
 import com.app.market.domain.model.market.AppComments
 import com.app.market.domain.model.market.AppDetail
 import com.app.market.domain.model.market.AppSource
+import com.app.market.domain.model.market.HistoricalVersion
+import com.app.market.domain.model.market.HistoricalVersionPage
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.SearchPage
 import com.app.market.domain.model.today.TodayArticle
 import com.app.market.domain.model.today.TodayFeedPage
 import com.app.market.domain.model.update.ManualUpdateRequest
 import com.app.market.domain.model.update.ManualUpdateResult
+import com.app.market.domain.exception.MarketException
+import com.app.market.domain.repository.FdroidRepository
 import com.app.market.domain.repository.HonorRepository
 import com.app.market.domain.repository.HuaweiRepository
 import com.app.market.domain.repository.KuaibaoRepository
@@ -36,6 +40,7 @@ internal class MarketSourceRepositoryImpl(
     private val huawei: HuaweiRepository,
     private val tapTap: TapTapRepository,
     private val kuaibao: KuaibaoRepository,
+    private val fdroid: FdroidRepository,
 ) : MarketSourceRepository {
     override suspend fun search(source: AppSource, keyword: String, page: Int): SearchPage = when (source) {
         AppSource.XIAOMI -> market.search(keyword, page)
@@ -47,6 +52,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.HUAWEI -> huawei.search(keyword, page)
         AppSource.TAPTAP -> tapTap.search(keyword, page)
         AppSource.KUAIBAO -> kuaibao.search(keyword, page)
+        AppSource.FDROID -> fdroid.search(keyword, page)
     }
 
     override suspend fun appDetail(
@@ -71,6 +77,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.HUAWEI -> huawei.appDetail(appId, packageName)
         AppSource.TAPTAP -> tapTap.appDetail(appId, packageName)
         AppSource.KUAIBAO -> kuaibao.appDetail(appId)
+        // F-Droid 无站内数字 id，以 packageName 为真实键
+        AppSource.FDROID -> fdroid.appDetail(packageName)
     }
 
     override suspend fun appComments(source: AppSource, app: MarketAppInfo): AppComments {
@@ -78,6 +86,7 @@ internal class MarketSourceRepositoryImpl(
         return when (source) {
             // 好游快爆网页端有原生评论协议
             AppSource.KUAIBAO -> kuaibao.appComments(app)
+            AppSource.FDROID -> AppComments(emptyList(), 0L)
             else -> {
                 val xiaomi = app.onXiaomi()
                 market.appComments(xiaomi.appId, xiaomi.versionCode)
@@ -101,6 +110,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.HUAWEI -> huawei.downloadMeta(app)
         AppSource.TAPTAP -> tapTap.downloadMeta(app)
         AppSource.KUAIBAO -> kuaibao.downloadMeta(app)
+        AppSource.FDROID -> fdroid.downloadMeta(app)
     }
 
     override suspend fun downloadUpdateMeta(source: AppSource, app: MarketAppInfo): DownloadMeta = when (source) {
@@ -115,6 +125,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.HONOR -> honor.downloadUpdateMeta(app)
         AppSource.HUAWEI -> huawei.downloadUpdateMeta(app)
         AppSource.TAPTAP -> tapTap.downloadUpdateMeta(app)
+        // F-Droid 无更新来源资格（capabilities 已保证不会走到这里）；兜底走自身的下载解析
+        AppSource.FDROID -> fdroid.downloadMeta(app)
     }
 
     override suspend fun loadReconciledCachedUpdates(): List<MarketAppInfo> =
@@ -131,6 +143,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.TAPTAP -> flow { emit(tapTap.checkUpdates()) }
         // 好游快爆无更新协议；能力声明已保证不会作为更新来源被选中
         AppSource.KUAIBAO -> flow { emit(emptyList()) }
+        // P2 起通过仓库索引做本地比对，首次调用会触发索引同步（约 20MB gzip）
+        AppSource.FDROID -> flow { emit(fdroid.checkUpdates()) }
     }
 
     override suspend fun checkManualUpdate(source: AppSource, request: ManualUpdateRequest): ManualUpdateResult =
@@ -145,13 +159,14 @@ internal class MarketSourceRepositoryImpl(
             AppSource.HONOR -> honor.checkManualUpdate(request)
             AppSource.HUAWEI -> huawei.checkManualUpdate(request)
             AppSource.TAPTAP -> tapTap.checkManualUpdate(request)
+            AppSource.FDROID -> fdroid.checkManualUpdate(request)
         }
 
     override suspend fun goldMiFeed(source: AppSource, page: Int, pageSize: Int): TodayFeedPage =
         when (source) {
             AppSource.OPPO -> oppo.beautyFeed(page, pageSize)
-            // 豌豆荚 / 三星 / 华为 / 荣耀 / 好游快爆无独立今日内容，回退小米商店今日
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO ->
+            // 豌豆荚 / 三星 / 华为 / 荣耀 / 好游快爆 / F-Droid 无独立今日内容，回退小米商店今日
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID ->
                 today.goldMiFeed(page, pageSize)
 
             AppSource.VIVO -> vivo.auroraFeed(page, pageSize)
@@ -161,11 +176,30 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle =
         when (source) {
             AppSource.OPPO -> oppo.beautyArticle(rId)
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID ->
                 today.todayArticle(rId)
 
             AppSource.VIVO -> vivo.auroraArticle(rId)
             AppSource.TAPTAP -> tapTap.todayArticle(rId)
+        }
+
+    override suspend fun historicalVersions(
+        source: AppSource,
+        appId: Long,
+        packageName: String,
+        offset: Int,
+    ): HistoricalVersionPage = when (source) {
+        AppSource.WANDOUJIA -> wandoujia.historicalVersions(appId, packageName, offset)
+        AppSource.FDROID -> fdroid.historicalVersions(packageName, offset)
+        // 其余来源未声明 supportsHistoricalVersions，UI 不会进入；返回空页兜底
+        else -> HistoricalVersionPage(items = emptyList(), nextOffset = null)
+    }
+
+    override suspend fun historicalDownloadMeta(source: AppSource, version: HistoricalVersion): DownloadMeta =
+        when (source) {
+            AppSource.WANDOUJIA -> wandoujia.historicalDownloadMeta(version)
+            AppSource.FDROID -> fdroid.historicalDownloadMeta(version)
+            else -> throw MarketException("该来源不支持历史版本下载")
         }
 
     private suspend fun MarketAppInfo.onXiaomi(): MarketAppInfo {

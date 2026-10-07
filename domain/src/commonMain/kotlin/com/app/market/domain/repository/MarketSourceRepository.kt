@@ -4,6 +4,8 @@ import com.app.market.domain.model.download.DownloadMeta
 import com.app.market.domain.model.market.AppComments
 import com.app.market.domain.model.market.AppDetail
 import com.app.market.domain.model.market.AppSource
+import com.app.market.domain.model.market.HistoricalVersion
+import com.app.market.domain.model.market.HistoricalVersionPage
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.SearchPage
 import com.app.market.domain.model.today.TodayArticle
@@ -46,4 +48,14 @@ interface MarketSourceRepository {
     suspend fun goldMiFeed(source: AppSource, page: Int = 0, pageSize: Int = 9): TodayFeedPage
 
     suspend fun todayArticle(source: AppSource, rId: String): TodayArticle
+
+    /** 历史版本列表；仅声明了 [com.app.market.domain.model.market.SourceCapabilities.supportsHistoricalVersions] 的源有数据。 */
+    suspend fun historicalVersions(
+        source: AppSource,
+        appId: Long,
+        packageName: String,
+        offset: Int = 0,
+    ): HistoricalVersionPage
+
+    suspend fun historicalDownloadMeta(source: AppSource, version: HistoricalVersion): DownloadMeta
 }

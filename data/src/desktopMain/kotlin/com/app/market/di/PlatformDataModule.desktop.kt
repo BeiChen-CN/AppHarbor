@@ -6,6 +6,8 @@ import com.app.market.data.local.PreferencesDataSourceImpl
 import com.app.market.data.platform.DesktopThemePlatformPreferences
 import com.app.market.data.platform.ThemePlatformPreferences
 import com.app.market.data.platform.createHttpClient
+import com.app.market.data.remote.fdroid.FdroidIndexCache
+import com.app.market.data.remote.fdroid.JvmFdroidIndexCache
 import com.app.market.data.remote.xiaomi.platform.DesktopDeviceDefaultsDataSource
 import com.app.market.data.remote.xiaomi.platform.DesktopXiaomiDeviceIdentityDataSource
 import com.app.market.data.remote.xiaomi.platform.DeviceDefaultsDataSource
@@ -28,9 +30,14 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import java.io.File
 
 internal actual val platformDataModule: Module = module {
     single { createHttpClient() }
+    // 与桌面端偏好设置同一根目录（~/.app-market），缓存目录由系统/用户清理策略管理
+    single<FdroidIndexCache> {
+        JvmFdroidIndexCache(File(File(System.getProperty("user.home"), ".app-market"), "cache/fdroid"), get(), get())
+    }
     singleOf(::PreferencesDataSourceImpl) { bind<PreferencesDataSource>() }
     singleOf(::DesktopThemePlatformPreferences) { bind<ThemePlatformPreferences>() }
     singleOf(::DesktopDeviceDefaultsDataSource) { bind<DeviceDefaultsDataSource>() }

@@ -23,6 +23,7 @@ sealed interface Route : NavKey {
         val appId: Long,
         val packageName: String,
         val displayName: String,
+        val source: AppSource = AppSource.XIAOMI,
     ) : Route
 
     @Serializable

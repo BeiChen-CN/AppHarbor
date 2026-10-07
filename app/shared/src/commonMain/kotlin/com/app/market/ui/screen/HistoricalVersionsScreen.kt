@@ -49,6 +49,7 @@ import com.app.market.ui.component.MarketScaffold
 import com.app.market.ui.component.PageVerticalPadding
 import com.app.market.ui.util.formatSize
 import com.app.market.ui.util.localDateOf
+import com.app.market.domain.model.market.AppSource
 import com.app.market.viewmodel.HistoricalVersionsViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.number
@@ -64,14 +65,15 @@ fun HistoricalVersionsScreen(
     appId: Long,
     packageName: String,
     displayName: String,
+    source: AppSource,
     onBack: () -> Unit,
 ) {
-    LaunchedEffect(appId, packageName) { viewModel.load(appId, packageName) }
+    LaunchedEffect(source, appId, packageName) { viewModel.load(source, appId, packageName) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val downloadStates by viewModel.downloadStates.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
-    LaunchedEffect(listState, appId, packageName) {
+    LaunchedEffect(listState, source, appId, packageName) {
         snapshotFlow {
             val layout = listState.layoutInfo
             val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
@@ -79,7 +81,7 @@ fun HistoricalVersionsScreen(
         }
             .distinctUntilChanged()
             .collect { atBottom ->
-                if (atBottom) viewModel.loadMore(appId, packageName)
+                if (atBottom) viewModel.loadMore(source, appId, packageName)
             }
     }
 
@@ -132,7 +134,7 @@ fun HistoricalVersionsScreen(
                         )
                         AppTextButton(
                             text = stringResource(Res.string.retry),
-                            onClick = { viewModel.retry(appId, packageName) },
+                            onClick = { viewModel.retry(source, appId, packageName) },
                         )
                     }
                 }
@@ -152,7 +154,7 @@ fun HistoricalVersionsScreen(
                     HistoricalVersionRow(
                         version = version,
                         downloadState = downloadState,
-                        onDownload = { viewModel.download(version) },
+                        onDownload = { viewModel.download(source, version) },
                         onPause = { viewModel.pause(version) },
                     )
                 }

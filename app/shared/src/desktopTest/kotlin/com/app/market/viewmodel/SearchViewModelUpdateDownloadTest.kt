@@ -9,6 +9,8 @@ import com.app.market.domain.model.installed.PackageChange
 import com.app.market.domain.model.market.AppComments
 import com.app.market.domain.model.market.AppDetail
 import com.app.market.domain.model.market.AppSource
+import com.app.market.domain.model.market.HistoricalVersion
+import com.app.market.domain.model.market.HistoricalVersionPage
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.SearchPage
 import com.app.market.domain.model.preference.HomePage
@@ -146,6 +148,15 @@ private class RecordingSearchSources : MarketSourceRepository {
 
     override suspend fun goldMiFeed(source: AppSource, page: Int, pageSize: Int): TodayFeedPage = error("Not used")
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle = error("Not used")
+    override suspend fun historicalVersions(
+        source: AppSource,
+        appId: Long,
+        packageName: String,
+        offset: Int,
+    ): HistoricalVersionPage = error("Not used")
+
+    override suspend fun historicalDownloadMeta(source: AppSource, version: HistoricalVersion): DownloadMeta =
+        error("Not used")
 }
 
 private fun MarketAppInfo.downloadMeta() = DownloadMeta(

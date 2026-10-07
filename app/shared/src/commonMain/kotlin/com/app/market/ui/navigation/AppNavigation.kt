@@ -145,6 +145,7 @@ fun AppNavigation(
                                 appId = app.appId,
                                 packageName = app.packageName,
                                 displayName = app.displayName,
+                                source = app.source,
                             )
                         )
                     },
@@ -158,6 +159,7 @@ fun AppNavigation(
                     appId = route.appId,
                     packageName = route.packageName,
                     displayName = route.displayName,
+                    source = route.source,
                     onBack = { navigator.pop() },
                 )
             }

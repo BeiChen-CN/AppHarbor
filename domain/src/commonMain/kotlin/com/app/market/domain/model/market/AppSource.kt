@@ -42,6 +42,7 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             todayFullCoverOverlay = false,
             // 豌豆荚无原生更新元数据协议，更新下载与手动更新均回退小米，不提供独立更新来源
             supportsUpdates = false,
+            supportsHistoricalVersions = true,
         ),
     ),
     OPPO(
@@ -119,6 +120,20 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             todayFullCoverOverlay = false,
             // 网页渠道不暴露版本号，无独立更新协议，更新下载与手动更新均回退小米
             supportsUpdates = false,
+        ),
+    ),
+    FDROID(
+        "fdroid",
+        SourceCapabilities(
+            supportsComments = false,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            // P2 起基于仓库索引（index-v2）做本地更新比对；仅推签名指纹兼容的条目
+            supportsUpdates = true,
+            supportsHistoricalVersions = true,
         ),
     );
 

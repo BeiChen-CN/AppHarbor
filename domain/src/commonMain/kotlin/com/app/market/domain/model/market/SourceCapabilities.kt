@@ -19,6 +19,8 @@ data class SourceCapabilities(
     val todayFullCoverOverlay: Boolean,
     /** 是否提供独立的更新检查与更新下载；为 false 的源不出现在更新来源选项中。 */
     val supportsUpdates: Boolean,
+    /** 是否支持历史版本列表与历史版本下载；为 false 时详情页不展示历史版本入口。 */
+    val supportsHistoricalVersions: Boolean = false,
     /** 搜索结果是否带推广标记，并可按设置过滤。 */
     val supportsSearchAdsFilter: Boolean = false,
     /** 搜索结果是否带快应用标记，并可按设置过滤。 */

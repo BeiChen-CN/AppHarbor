@@ -5,9 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.market.domain.model.download.DownloadState
 import com.app.market.domain.model.download.DownloadTaskKey
+import com.app.market.domain.model.market.AppSource
 import com.app.market.domain.model.market.HistoricalVersion
 import com.app.market.domain.repository.DownloadRepository
-import com.app.market.domain.repository.WandoujiaRepository
+import com.app.market.domain.repository.MarketSourceRepository
 import com.app.market.platform.UiPlatform
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +28,7 @@ data class HistoricalVersionsUiState(
 }
 
 class HistoricalVersionsViewModel(
-    private val wandoujia: WandoujiaRepository,
+    private val sources: MarketSourceRepository,
     private val downloads: DownloadRepository,
     private val uiPlatform: UiPlatform,
 ) : ViewModel() {
@@ -35,15 +36,15 @@ class HistoricalVersionsViewModel(
     val uiState: StateFlow<HistoricalVersionsUiState> = _uiState.asStateFlow()
     val downloadStates: StateFlow<Map<DownloadTaskKey, DownloadState>> = downloads.taskStates
 
-    private var loadedKey: Pair<Long, String>? = null
+    private var loadedKey: Pair<AppSource, Pair<Long, String>>? = null
 
-    fun load(appId: Long, packageName: String) {
-        val key = appId to packageName
+    fun load(source: AppSource, appId: Long, packageName: String) {
+        val key = source to (appId to packageName)
         if (loadedKey == key || _uiState.value.loading && loadedKey != null) return
         loadedKey = key
         _uiState.value = HistoricalVersionsUiState()
         viewModelScope.launch {
-            runCatchingCancellable { wandoujia.historicalVersions(appId, packageName, offset = 0) }
+            runCatchingCancellable { sources.historicalVersions(source, appId, packageName, offset = 0) }
                 .onSuccess { page ->
                     _uiState.update {
                         it.copy(
@@ -61,12 +62,12 @@ class HistoricalVersionsViewModel(
         }
     }
 
-    fun loadMore(appId: Long, packageName: String) {
+    fun loadMore(source: AppSource, appId: Long, packageName: String) {
         val offset = _uiState.value.nextOffset ?: return
         if (_uiState.value.loading || _uiState.value.loadingMore) return
         _uiState.update { it.copy(loadingMore = true, errorMessage = "") }
         viewModelScope.launch {
-            runCatchingCancellable { wandoujia.historicalVersions(appId, packageName, offset) }
+            runCatchingCancellable { sources.historicalVersions(source, appId, packageName, offset) }
                 .onSuccess { page ->
                     _uiState.update { state ->
                         val known = state.items.asSequence().map { it.versionId }.toHashSet()
@@ -89,20 +90,22 @@ class HistoricalVersionsViewModel(
         }
     }
 
-    fun retry(appId: Long, packageName: String) {
+    fun retry(source: AppSource, appId: Long, packageName: String) {
         if (_uiState.value.loading || _uiState.value.loadingMore) return
         if (_uiState.value.items.isEmpty()) {
             loadedKey = null
-            load(appId, packageName)
+            load(source, appId, packageName)
         } else {
-            loadMore(appId, packageName)
+            loadMore(source, appId, packageName)
         }
     }
 
-    fun download(version: HistoricalVersion) {
-        runCatching { wandoujia.historicalDownloadMeta(version) }
-            .onSuccess { downloads.start(it, installAfterDownload = false) }
-            .onFailure { uiPlatform.showToast(it.message ?: "Download failed") }
+    fun download(source: AppSource, version: HistoricalVersion) {
+        viewModelScope.launch {
+            runCatchingCancellable { sources.historicalDownloadMeta(source, version) }
+                .onSuccess { downloads.start(it, installAfterDownload = false) }
+                .onFailure { uiPlatform.showToast(it.message ?: "Download failed") }
+        }
     }
 
     fun pause(version: HistoricalVersion) {

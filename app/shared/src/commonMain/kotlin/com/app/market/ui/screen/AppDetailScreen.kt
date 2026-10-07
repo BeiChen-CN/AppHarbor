@@ -644,7 +644,7 @@ private fun AppDetailContent(
                                 onValueClick = { uriHandler.openUri(current.privacyUrl) },
                             )
                         }
-                        if (current.app.source == AppSource.WANDOUJIA) {
+                        if (current.app.source.capabilities.supportsHistoricalVersions) {
                             InfoLine(
                                 label = historicalVersionsLabel,
                                 value = historicalVersionsSummary,

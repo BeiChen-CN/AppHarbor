@@ -1,3 +1,3 @@
 package com.app.market.domain.exception
 
-class MarketException(message: String) : RuntimeException(message)
+class MarketException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

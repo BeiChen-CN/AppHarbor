@@ -81,9 +81,17 @@ class AppNameFormatTest {
     }
 
     @Test
+    fun kuaibaoNamesSplitAtFirstHyphen() {
+        assertEquals(
+            AppDisplayName("原神(官服)", "六周年版本"),
+            "原神(官服)-六周年版本".splitAppDisplayName(AppSource.KUAIBAO),
+        )
+    }
+
+    @Test
     fun otherAndUnknownSourcesKeepTheOriginalName() {
         val sources = AppSource.entries.filter {
-            it != AppSource.XIAOMI && it != AppSource.VIVO && it != AppSource.OPPO
+            it != AppSource.XIAOMI && it != AppSource.VIVO && it != AppSource.OPPO && it != AppSource.KUAIBAO
         } + null
         for (source in sources) {
             for (name in listOf(" 应用-开发版 (推广语) ", " 应用-开发版（推广语） ", " 应用—开发版（推广语） ")) {

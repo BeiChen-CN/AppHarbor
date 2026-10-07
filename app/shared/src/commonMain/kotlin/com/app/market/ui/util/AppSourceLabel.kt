@@ -3,6 +3,7 @@ package com.app.market.ui.util
 import androidx.compose.runtime.Composable
 import com.app.market.domain.model.market.AppSource
 import com.app.market.resources.Res
+import com.app.market.resources.source_fdroid
 import com.app.market.resources.source_honor
 import com.app.market.resources.source_huawei
 import com.app.market.resources.source_kuaibao
@@ -25,4 +26,5 @@ fun appSourceLabel(source: AppSource): String = when (source) {
     AppSource.HUAWEI -> stringResource(Res.string.source_huawei)
     AppSource.TAPTAP -> stringResource(Res.string.source_taptap)
     AppSource.KUAIBAO -> stringResource(Res.string.source_kuaibao)
+    AppSource.FDROID -> stringResource(Res.string.source_fdroid)
 }

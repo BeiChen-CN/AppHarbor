@@ -4,6 +4,8 @@ import com.app.market.domain.model.download.DownloadMeta
 import com.app.market.domain.model.market.AppComments
 import com.app.market.domain.model.market.AppDetail
 import com.app.market.domain.model.market.AppSource
+import com.app.market.domain.model.market.HistoricalVersion
+import com.app.market.domain.model.market.HistoricalVersionPage
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.SearchPage
 import com.app.market.domain.model.preference.HomePage
@@ -112,6 +114,15 @@ private class FakeMarketSourceRepository : MarketSourceRepository {
     override fun checkUpdatesFlow(source: AppSource): Flow<List<MarketAppInfo>> = emptyFlow()
     override suspend fun checkManualUpdate(source: AppSource, request: ManualUpdateRequest): ManualUpdateResult = error("Not used")
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle = error("Not used")
+    override suspend fun historicalVersions(
+        source: AppSource,
+        appId: Long,
+        packageName: String,
+        offset: Int,
+    ): HistoricalVersionPage = error("Not used")
+
+    override suspend fun historicalDownloadMeta(source: AppSource, version: HistoricalVersion): DownloadMeta =
+        error("Not used")
 }
 
 private class FakePreferences(

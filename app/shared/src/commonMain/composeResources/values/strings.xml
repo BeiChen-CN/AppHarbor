@@ -124,6 +124,7 @@
     <string name="source_huawei">Huawei</string>
     <string name="source_taptap">TapTap</string>
     <string name="source_kuaibao">Haoyou Kuaibao</string>
+    <string name="source_fdroid">F-Droid</string>
     <string name="historical_versions">Historical versions</string>
     <string name="historical_versions_summary">View all versions</string>
     <string name="historical_versions_title">%1$s versions</string>

@@ -1,6 +1,9 @@
 package com.app.market.di
 
+import android.content.Context
 import com.app.market.data.download.PlatformDownloadDataSource
+import com.app.market.data.remote.fdroid.FdroidIndexCache
+import com.app.market.data.remote.fdroid.JvmFdroidIndexCache
 import com.app.market.data.install.AndroidInstallRepositoryImpl
 import com.app.market.data.install.DeltaFallbackBus
 import com.app.market.data.install.PackageStagingDownloader
@@ -49,9 +52,11 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import java.io.File
 
 internal actual val platformDataModule: Module = module {
     single { createAndroidHttpClient() }
+    single<FdroidIndexCache> { JvmFdroidIndexCache(File(get<Context>().cacheDir, "fdroid"), get(), get()) }
     singleOf(::PreferencesDataSourceImpl) { bind<PreferencesDataSource>() }
     singleOf(::AndroidThemePlatformPreferences) { bind<ThemePlatformPreferences>() }
     singleOf(::AndroidDeviceDefaultsDataSource) { bind<DeviceDefaultsDataSource>() }
