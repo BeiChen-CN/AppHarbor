@@ -49,7 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.app.market.resources.Res
 import com.app.market.resources.about_author_name
+import com.app.market.resources.about_github
 import com.app.market.resources.about_open_source_licenses
+import com.app.market.resources.about_project
 import com.app.market.resources.about_title
 import com.app.market.resources.app_name
 import com.app.market.resources.back
@@ -335,6 +337,35 @@ private fun AboutContent(
 
             item(key = "about") {
                 Column(modifier = Modifier.heightIn(min = with(density) { viewportHeight.toDp() }).padding(bottom = 12.dp)) {
+                    SectionTitle(text = stringResource(Res.string.about_project))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                            .then(
+                                if (backdrop != null) {
+                                    Modifier.textureBlur(
+                                        backdrop = backdrop,
+                                        shape = RoundedCornerShape(16.dp),
+                                        blurRadius = 60f,
+                                        noiseCoefficient = BlurDefaults.NoiseCoefficient,
+                                        colors = BlurColors(blendColors = cardBlendColors),
+                                        enabled = true,
+                                    )
+                                } else Modifier
+                        ),
+                        colors = CardDefaults.defaultColors(
+                            if (backdrop != null && blurEnabled) Color.Transparent else colorScheme.surfaceContainer,
+                            Color.Transparent,
+                        ),
+                    ) {
+                        ArrowPreference(
+                            title = stringResource(Res.string.about_github),
+                            summary = "github.com/BeiChen-CN/AppMarket",
+                            onClick = { onOpenUrl("https://github.com/BeiChen-CN/AppMarket") },
+                        )
+                    }
+
                     SectionTitle(text = stringResource(Res.string.about_open_source_licenses))
                     Card(
                         modifier = Modifier

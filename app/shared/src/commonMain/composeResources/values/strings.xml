@@ -244,6 +244,8 @@
     <string name="about_summary">Version info and project link</string>
     <string name="about_title">About</string>
     <string name="about_author_name">Author: %1$s</string>
+    <string name="about_project">Project</string>
+    <string name="about_github">GitHub repository</string>
     <string name="about_open_source_licenses">Open source licenses</string>
 
     <!-- Update history -->
