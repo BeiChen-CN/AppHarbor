@@ -2,6 +2,10 @@
 
 基于 **Kotlin Multiplatform** 的现代化跨平台应用商店，支持 **Android** 与 **Desktop (JVM)**。采用 **miuix** 设计语言，拥有流畅优雅的视觉交互，聚合多家主流应用源。
 
+> [!NOTE]
+>
+> 本仓库 Fork 自上游 [Uevo001/AppMarket](https://github.com/Uevo001/AppMarket)，并在其基础上持续开发：新增 F-Droid 来源（索引缓存更新检查 + 签名门控）、历史版本多源路由、好游快爆来源等。上游 remote 已配置（`upstream`），便于同步上游更新。
+
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.12.0-blue?logo=jetpackcompose)](https://github.com/JetBrains/compose-multiplatform)
 [![miuix](https://img.shields.io/badge/UI-miuix-FF6900.svg)](https://github.com/compose-miuix-ui/miuix)
