@@ -2,8 +2,6 @@
 
 基于 **Kotlin Multiplatform** 的现代化跨平台应用商店，支持 **Android** 与 **Desktop (JVM)**。采用 **miuix** 设计语言，拥有流畅优雅的视觉交互，聚合多家主流应用源。
 
-AppHarbor 原名 AppMarket，采用蓝色港湾 A 与海浪图标。Android 图标支持自适应形状；Android 13+ 可在支持的桌面开启主题图标，随壁纸取色。可查看 [彩色与莫奈图标预览](branding/appharbor/preview.png) 和 [图标资源说明](branding/appharbor/README.md)。应用包名仍为 `com.app.market`，保留现有数据兼容性。
-
 > [!NOTE]
 >
 > 本仓库 Fork 自上游 [YXBwbWFya2V0/AppMarket](https://github.com/YXBwbWFya2V0/AppMarket)，并在其基础上持续开发：新增 F-Droid 来源（索引缓存更新检查 + 签名门控）、历史版本多源路由、好游快爆来源等。上游 remote 已配置（`upstream`），便于同步上游更新。
@@ -103,8 +101,6 @@ AppHarbor 原名 AppMarket，采用蓝色港湾 A 与海浪图标。Android 图�
    - 支持自定义交接给系统内其他第三方安装器或分发应用处理。
 
 ---
-
-「设置 → 下载与安装」提供独立的「更新后自动删除安装包」开关，默认关闭。开启后，仅对已安装应用的新版本安装任务生效：确认目标版本成功安装后，删除该任务对应的安装包（包括保存到 Download 的副本），支持标准、Shizuku、Root 和第三方安装器，以及重启后的安装结果恢复。新装、重装、降级和仅下载任务不会触发此项清理；失败或取消也不会触发。该开关与已有「保存到 Download」和第三方安装器「安装完成后删除安装包」设置独立，原有设置仍按原行为工作。
 
 ## 编译与开发
 
