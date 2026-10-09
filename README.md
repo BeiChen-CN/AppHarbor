@@ -84,13 +84,9 @@ AppHarbor 原名 AppMarket，采用蓝色港湾 A 与海浪图标。Android 图�
 >
 > _\*\* 注：F-Droid 基于仓库索引（index-v2）在本地比对更新，并做**签名指纹门控**——仅推荐与本机已安装应用签名兼容的更新（F-Droid 默认对 APK 重签名，与其他来源签名不互通）。首次使用更新检查需同步约 20MB 的 gzip 索引并构建本地缓存；搜索结果为官方接口固定返回的前 10 条，无分页。_
 
-酷安来源支持分页搜索、精确包名查询、应用详情、截图、全量 APK 下载、更新检查和手动更新。可在「设置」中分别选择酷安作为搜索来源和更新来源。更新检查按本机包名查询最新版本，每批最多并发 4 个请求；未收录或不可下载的应用会跳过。暂不提供评论、历史版本、今日内容或增量更新。
-
-酷安接口协议参考 [Obtainium 的 CoolApk 实现](https://github.com/ImranR98/Obtainium/blob/main/lib/app_sources/coolapk.dart)：使用动态 v2 Token 请求 `api2.coolapk.com/v6`，从下载接口重定向取得原始安装包地址，交由现有下载/安装流程处理并校验服务端提供的 MD5。采用配套的固定客户端版本和虚拟设备指纹；该来源不使用机型模拟设置。服务端若调整客户端版本要求，需同步更新请求指纹。
+酷安和应用宝均支持搜索、应用详情、APK 下载、更新检查和手动更新，可在「设置」中分别选为搜索来源和更新来源。
 
 ---
-
-应用宝来源支持关键词搜索、精确包名查询、详情与截图、全量 APK 下载、更新检查和手动更新。搜索使用官网 `sj.qq.com/search` 的应用列表；详情通过腾讯 `upage.html5.qq.com/wechat-apkinfo` 接口获取真实版本号，参考 [Obtainium 的相关讨论](https://github.com/ImranR98/Obtainium/issues/1848)，并优先校验 SHA-256（无有效 SHA-256 时使用 MD5）。官网搜索一次返回当前结果，无分页；更新检查按包名查询，每批最多并发 4 个请求。暂不支持评论、历史版本、今日内容、机型模拟或增量更新。
 
 ## 安装方式与安装器
 
@@ -170,6 +166,7 @@ AppHarbor 原名 AppMarket，采用蓝色港湾 A 与海浪图标。Android 图�
 - [HiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) - Android 非公开 API 限制绕过方案
 - [HDiffPatch](https://github.com/sisong/HDiffPatch) - 高性能差分与补丁还原库
 - [HyperNotification](https://github.com/xzakota/HyperNotification) - 小米澎湃焦点通知与超级岛适配支持
+- [Obtainium](https://github.com/ImranR98/Obtainium) - 酷安与应用宝来源接入参考
 
 ---
 
