@@ -24,6 +24,7 @@ import com.app.market.domain.model.install.DeltaFallback
 import com.app.market.domain.model.install.InstallArtifact
 import com.app.market.domain.model.install.InstallEvent
 import com.app.market.domain.model.install.InstallFailureCode
+import com.app.market.domain.model.install.InstallCleanupPolicy
 import com.app.market.domain.model.install.InstallRequest
 import com.app.market.domain.model.install.InstallSource
 import com.app.market.domain.model.install.InstallUserAction
@@ -105,6 +106,7 @@ internal class AndroidDownloadDataSource(
             restored.await()
             val saveToDownloads = !installAfterDownload ||
                     runCatching { preferences.saveToDownloads() }.getOrDefault(false)
+            val deleteAfterUpdate = updateCleanupEnabled(meta.packageName, meta.versionCode, installAfterDownload)
             val deltaUpdateEnabled = runCatching {
                 preferences.deltaUpdateEnabled()
             }.getOrDefault(false)
@@ -127,7 +129,7 @@ internal class AndroidDownloadDataSource(
                 InstallTaskRecord(
                     id = id,
                     appId = meta.appId,
-                    request = meta.toInstallRequest(id, saveToDownloads, deltaUpdateEnabled),
+                    request = meta.toInstallRequest(id, saveToDownloads, deltaUpdateEnabled, deleteAfterUpdate),
                     installAfterDownload = installAfterDownload,
                     progress = resumable?.progress,
                 ).also {
@@ -343,14 +345,14 @@ internal class AndroidDownloadDataSource(
 
     override suspend fun onPackageChanged(packageName: String) {
         restored.await()
+        val installedVersion = runCatching { packages.freshInstalledVersionCode(packageName) }.getOrNull()
         val completed = tasks.all().filter { record ->
             record.request.packageName == packageName &&
-                    record.phase in setOf(DownloadPhase.INSTALLING, DownloadPhase.AWAITING_USER_ACTION)
+                    record.phase in setOf(DownloadPhase.INSTALLING, DownloadPhase.AWAITING_USER_ACTION) &&
+                    InstallCleanupPolicy.installationConfirmed(record.request.versionCode, installedVersion)
         }
         completed.forEach { record ->
-            if (!record.request.saveToDownloads) {
-                record.savedPackageId?.let { savedId -> runCatching { packageStore.delete(savedId) } }
-            }
+            deleteCompletedPackage(record)
             tasks.remove(record.id)
             staging.clear(record.id)
             removePublishedState(record)
@@ -551,6 +553,7 @@ internal class AndroidDownloadDataSource(
                     false
                 },
                 sourceSavedPackageId = savedPackageId,
+                deleteAfterUpdate = updateCleanupEnabled(saved.packageName, saved.versionCode, installAfterDownload = true),
             )
             InstallTaskRecord(
                 id = id,
@@ -582,6 +585,24 @@ internal class AndroidDownloadDataSource(
         }
     }
 
+    private suspend fun updateCleanupEnabled(packageName: String, targetVersion: Long, installAfterDownload: Boolean): Boolean {
+        if (!installAfterDownload) return false
+        val enabled = runCatching { preferences.deleteAfterUpdate() }.getOrDefault(false)
+        if (!enabled) return false
+        val installedVersion = runCatching { packages.freshInstalledVersionCode(packageName) }.getOrNull()
+        return InstallCleanupPolicy.deleteAfterUpdate(enabled, installAfterDownload, installedVersion, targetVersion)
+    }
+
+    /** Called only after the installed version has confirmed success, including recovery after process death. */
+    private suspend fun deleteCompletedPackage(record: InstallTaskRecord) {
+        if (!record.request.saveToDownloads || record.request.deleteAfterUpdate) {
+            record.savedPackageId?.let { savedId ->
+                runCatching { packageStore.delete(savedId) }
+                    .onFailure { error -> debugLog("InstallTask") { "Saved package cleanup failed for $savedId: $error" } }
+            }
+        }
+    }
+
     private suspend fun restoreTasks() {
         val records = tasks.all()
         if (records.isEmpty()) {
@@ -598,9 +619,7 @@ internal class AndroidDownloadDataSource(
                 original.request.versionCode > 0L &&
                 installedVersion != null && installedVersion >= original.request.versionCode
             ) {
-                if (original.externalInstallerPackage != null && !original.request.saveToDownloads) {
-                    original.savedPackageId?.let { savedId -> runCatching { packageStore.delete(savedId) } }
-                }
+                deleteCompletedPackage(original)
                 tasks.remove(original.id)
                 return@forEach
             }
@@ -696,6 +715,7 @@ internal class AndroidDownloadDataSource(
         id: String,
         saveToDownloads: Boolean,
         deltaUpdateEnabled: Boolean,
+        deleteAfterUpdate: Boolean,
     ): InstallRequest {
         val resolvedParts = parts.takeIf { it.isNotEmpty() }
             ?: listOf(DownloadPart("base", "base", url, size))
@@ -738,6 +758,7 @@ internal class AndroidDownloadDataSource(
                 )
             },
             saveToDownloads = saveToDownloads,
+            deleteAfterUpdate = deleteAfterUpdate,
         )
     }
 

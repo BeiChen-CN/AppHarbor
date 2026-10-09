@@ -35,6 +35,8 @@ class DesktopInstallerPreferencesRepositoryImpl : InstallerPreferencesRepository
     override suspend fun setThirdPartyInstallerPackage(packageName: String) {}
     override suspend fun saveToDownloads(): Boolean = true
     override suspend fun setSaveToDownloads(enabled: Boolean) {}
+    override suspend fun deleteAfterUpdate(): Boolean = false
+    override suspend fun setDeleteAfterUpdate(enabled: Boolean) = Unit
     override fun userActionNotRequiredConfigurable(): Boolean = false
     override suspend fun userActionNotRequiredEnabled(): Boolean = false
     override suspend fun setUserActionNotRequiredEnabled(enabled: Boolean) {}

@@ -36,6 +36,8 @@ import com.app.market.resources.installer_delta_fallback_notice
 import com.app.market.resources.installer_delta_fallback_notice_summary
 import com.app.market.resources.installer_delta_update
 import com.app.market.resources.installer_delta_update_summary
+import com.app.market.resources.installer_delete_after_update
+import com.app.market.resources.installer_delete_after_update_summary
 import com.app.market.resources.installer_section
 import com.app.market.resources.installer_section_summary
 import com.app.market.resources.manual_update
@@ -289,6 +291,12 @@ fun SettingsTab(
                             title = stringResource(Res.string.installer_section),
                             summary = stringResource(Res.string.installer_section_summary),
                             onClick = onNavigateInstaller,
+                        )
+                        SwitchPreference(
+                            title = stringResource(Res.string.installer_delete_after_update),
+                            summary = stringResource(Res.string.installer_delete_after_update_summary),
+                            checked = installerState.deleteAfterUpdate,
+                            onCheckedChange = installerSettingsViewModel::setDeleteAfterUpdate,
                         )
                         if (installerState.focusNotificationSupported) {
                             SwitchPreference(

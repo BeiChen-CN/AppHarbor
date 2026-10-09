@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">App Store</string>
+    <string name="app_name">AppHarbor</string>
 
     <!-- Navigation -->
     <string name="nav_today">Today</string>
@@ -125,6 +125,7 @@
     <string name="source_taptap">TapTap</string>
     <string name="source_kuaibao">Haoyou Kuaibao</string>
     <string name="source_fdroid">F-Droid</string>
+    <string name="source_coolapk">CoolApk</string>
     <string name="historical_versions">Historical versions</string>
     <string name="historical_versions_summary">View all versions</string>
     <string name="historical_versions_title">%1$s versions</string>
@@ -272,4 +273,7 @@
     <string name="image_saved">Saved to Pictures/AppMarket</string>
     <string name="image_save_failed">Could not save the image</string>
     <string name="image_save_unsupported">Saving images is only available on Android</string>
+    <string name="source_tencent">Tencent App Store</string>
+    <string name="installer_delete_after_update">Delete packages after updates</string>
+    <string name="installer_delete_after_update_summary">Delete this task’s installation packages, including copies in Download, only after a successful app update.</string>
 </resources>

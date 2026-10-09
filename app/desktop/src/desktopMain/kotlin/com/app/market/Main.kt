@@ -23,10 +23,12 @@ import com.app.market.di.uiPlatformModule
 import com.app.market.di.viewModelModule
 import com.app.market.platform.setupImageLoader
 import com.app.market.resources.Res
+import com.app.market.resources.app_name
 import com.app.market.resources.ic_launcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.core.context.startKoin
 
 fun main() {
@@ -49,7 +51,7 @@ fun main() {
                 runCatching { koinApplication.koin.get<CoroutineScope>().cancel() }
                 exitApplication()
             },
-            title = "AppMarket",
+            title = stringResource(Res.string.app_name),
             icon = windowIcon,
         ) {
             App()

@@ -20,6 +20,7 @@ miuix = "0.9.4-rc01"
 hiddenapibypass = "6.1"
 rikka-shizuku = "13.1.5"
 focus-api = "1.4"
+jbcrypt = "0.4"
 
 [libraries]
 androidx-activity = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -55,6 +56,8 @@ hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", vers
 rikka-shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "rikka-shizuku" }
 rikka-shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "rikka-shizuku" }
 focus-api = { module = "com.xzakota.hyper.notification:focus-api", version.ref = "focus-api" }
+jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

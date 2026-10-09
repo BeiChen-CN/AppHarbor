@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "AppMarket"
+rootProject.name = "AppHarbor"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

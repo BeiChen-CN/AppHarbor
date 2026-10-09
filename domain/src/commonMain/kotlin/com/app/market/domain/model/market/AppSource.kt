@@ -122,6 +122,30 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             supportsUpdates = false,
         ),
     ),
+    TENCENT(
+        "tencent",
+        SourceCapabilities(
+            supportsComments = false,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            supportsUpdates = true,
+        ),
+    ),
+    COOLAPK(
+        "coolapk",
+        SourceCapabilities(
+            supportsComments = false,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            supportsUpdates = true,
+        ),
+    ),
     FDROID(
         "fdroid",
         SourceCapabilities(

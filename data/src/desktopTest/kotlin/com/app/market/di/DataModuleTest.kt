@@ -1,6 +1,8 @@
 package com.app.market.di
 
 import com.app.market.domain.repository.AccountRepository
+import com.app.market.domain.repository.TencentRepository
+import com.app.market.domain.repository.CoolapkRepository
 import com.app.market.domain.repository.DownloadRepository
 import com.app.market.domain.repository.InstalledApkHashRepository
 import com.app.market.domain.repository.InstalledPackagesRepository
@@ -37,6 +39,8 @@ class DataModuleTest {
                 assertNotNull(get<InstallerDiscoveryRepository>())
                 assertNotNull(get<MarketRepository>())
                 assertNotNull(get<MarketSourceRepository>())
+                assertNotNull(get<CoolapkRepository>())
+                assertNotNull(get<TencentRepository>())
                 assertNotNull(get<PackageRepository>())
                 assertNotNull(get<ProfileRepository>())
                 assertNotNull(get<SavedPackageRepository>())

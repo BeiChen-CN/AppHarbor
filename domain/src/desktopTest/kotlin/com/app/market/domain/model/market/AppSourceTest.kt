@@ -7,6 +7,27 @@ import kotlin.test.assertTrue
 
 class AppSourceTest {
     @Test
+    fun tencentSupportsIndependentUpdates() {
+        assertEquals(setOf(AppSource.TENCENT), AppSource.parse("tencent"))
+        assertEquals("tencent", AppSource.serialize(setOf(AppSource.TENCENT)))
+        assertTrue(AppSource.TENCENT.capabilities.supportsUpdates)
+        assertFalse(AppSource.TENCENT.capabilities.supportsTodayFeed)
+        assertFalse(AppSource.TENCENT.capabilities.supportsHistoricalVersions)
+        assertFalse(AppSource.TENCENT.capabilities.supportsDeltaUpdates)
+        assertFalse(AppSource.TENCENT.capabilities.supportsComments)
+    }
+
+    @Test
+    fun coolapkSupportsSearchAndFullUpdatesWithoutUnsupportedFeatures() {
+        assertEquals(setOf(AppSource.COOLAPK), AppSource.parse("coolapk"))
+        assertEquals("coolapk", AppSource.serialize(setOf(AppSource.COOLAPK)))
+        assertTrue(AppSource.COOLAPK.capabilities.supportsUpdates)
+        assertFalse(AppSource.COOLAPK.capabilities.supportsTodayFeed)
+        assertFalse(AppSource.COOLAPK.capabilities.supportsHistoricalVersions)
+        assertFalse(AppSource.COOLAPK.capabilities.supportsDeltaUpdates)
+        assertFalse(AppSource.COOLAPK.capabilities.supportsComments)
+    }
+    @Test
     fun legacyMultiSelectionMigratesToSingleSource() {
         assertEquals(setOf(AppSource.XIAOMI), AppSource.parse("xiaomi,vivo"))
         assertEquals(setOf(AppSource.WANDOUJIA), AppSource.parse("wandoujia"))

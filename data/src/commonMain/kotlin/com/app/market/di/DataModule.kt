@@ -3,6 +3,15 @@ package com.app.market.di
 import com.app.market.data.download.RecordingDownloadRepositoryImpl
 import com.app.market.data.platform.debugLog
 import com.app.market.data.remote.fdroid.FdroidApi
+import com.app.market.data.remote.tencent.TencentApi
+import com.app.market.data.remote.tencent.TencentApiConfig
+import com.app.market.data.repository.TencentRepositoryImpl
+import com.app.market.domain.repository.TencentRepository
+import com.app.market.data.remote.coolapk.CoolapkApi
+import com.app.market.data.remote.coolapk.CoolapkApiConfig
+import com.app.market.data.remote.coolapk.CoolapkSigner
+import com.app.market.data.repository.CoolapkRepositoryImpl
+import com.app.market.domain.repository.CoolapkRepository
 import com.app.market.data.remote.fdroid.FdroidApiConfig
 import com.app.market.data.remote.honor.HonorApi
 import com.app.market.data.remote.honor.HonorProtocol
@@ -69,6 +78,7 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import org.koin.dsl.onClose
 
 private val commonDataModule = module {
     single<CoroutineScope> {
@@ -119,6 +129,13 @@ private val commonDataModule = module {
     single { FdroidApiConfig() }
     singleOf(::FdroidApi)
     singleOf(::FdroidRepositoryImpl) { bind<FdroidRepository>() }
+    single { TencentApiConfig() }
+    singleOf(::TencentApi)
+    singleOf(::TencentRepositoryImpl) { bind<TencentRepository>() }
+    single { CoolapkApiConfig() }
+    single { CoolapkSigner() }
+    single { CoolapkApi(get(), get(), get()) } onClose { it?.close() }
+    singleOf(::CoolapkRepositoryImpl) { bind<CoolapkRepository>() }
     singleOf(::MarketSourceRepositoryImpl) { bind<MarketSourceRepository>() }
 
     singleOf(::RecordingDownloadRepositoryImpl) { bind<DownloadRepository>() }

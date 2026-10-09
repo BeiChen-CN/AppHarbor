@@ -35,7 +35,7 @@ internal data class FdroidApiConfig(
     val archiveBase: String = "https://f-droid.org/archive",
 )
 
-internal const val FdroidApiUserAgent = "AppMarket (F-Droid source; +https://github.com/YuKongA/AppMarket)"
+internal const val FdroidApiUserAgent = "AppMarket (F-Droid source; +https://github.com/YXBwbWFya2V0/AppMarket)"
 
 /** 搜索接口仅返回名称/简介/图标/页面链接；包名从页面链接末段解析。 */
 internal data class FdroidSearchEntry(

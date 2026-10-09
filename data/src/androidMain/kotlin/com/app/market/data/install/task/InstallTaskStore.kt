@@ -132,6 +132,7 @@ internal class InstallTaskStore(
         put("versionCode", versionCode)
         put("icon", icon)
         put("saveToDownloads", saveToDownloads)
+        put("deleteAfterUpdate", deleteAfterUpdate)
         sourceSavedPackageId?.let { put("sourceSavedPackageId", it) }
         marketSource?.let { put("marketSource", it.token) }
         put("artifacts", JSONArray().also { array -> artifacts.forEach { array.put(it.toJson()) } })
@@ -156,6 +157,7 @@ internal class InstallTaskStore(
             icon = optString("icon"),
             artifacts = artifacts,
             saveToDownloads = optBoolean("saveToDownloads", true),
+            deleteAfterUpdate = optBoolean("deleteAfterUpdate", false),
             sourceSavedPackageId = optString("sourceSavedPackageId").takeIf { it.isNotBlank() },
             marketSource = AppSource.fromToken(optString("marketSource")),
         )

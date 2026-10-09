@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 data class InstallerSettingsUiState(
     val mode: InstallerMode = InstallerMode.STANDARD,
     val saveToDownloads: Boolean = false,
+    val deleteAfterUpdate: Boolean = false,
     val userActionNotRequiredConfigurable: Boolean = false,
     val userActionNotRequiredEnabled: Boolean = false,
     val deltaUpdateSupported: Boolean = false,
@@ -75,6 +76,7 @@ class InstallerSettingsViewModel(
         _uiState.value = InstallerSettingsUiState(
             mode = mode,
             saveToDownloads = controller.saveToDownloads(),
+            deleteAfterUpdate = controller.deleteAfterUpdate(),
             userActionNotRequiredConfigurable = controller.userActionNotRequiredConfigurable(),
             userActionNotRequiredEnabled = controller.userActionNotRequiredEnabled(),
             deltaUpdateSupported = controller.deltaUpdateSupported(),
@@ -143,6 +145,11 @@ class InstallerSettingsViewModel(
             controller.setThirdPartyInstallerPackage(candidate.packageName)
             controller.setMode(InstallerMode.THIRD_PARTY)
         }
+    }
+
+    fun setDeleteAfterUpdate(enabled: Boolean) {
+        _uiState.update { it.copy(deleteAfterUpdate = enabled) }
+        viewModelScope.launch { controller.setDeleteAfterUpdate(enabled) }
     }
 
     fun setSaveToDownloads(enabled: Boolean) {

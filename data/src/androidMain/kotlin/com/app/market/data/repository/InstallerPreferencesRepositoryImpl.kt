@@ -42,6 +42,13 @@ internal class InstallerPreferencesRepositoryImpl(
         preferences.put(InstallerPreferenceKeys.SaveToDownloads, enabled)
     }
 
+    override suspend fun deleteAfterUpdate(): Boolean =
+        preferences.read(InstallerPreferenceKeys.DeleteAfterUpdate)
+
+    override suspend fun setDeleteAfterUpdate(enabled: Boolean) {
+        preferences.put(InstallerPreferenceKeys.DeleteAfterUpdate, enabled)
+    }
+
     override fun userActionNotRequiredConfigurable(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 context.applicationInfo.flags and SYSTEM_APP_FLAGS == 0

@@ -10,6 +10,8 @@ interface InstallerPreferencesRepository {
     suspend fun setThirdPartyInstallerPackage(packageName: String)
     suspend fun saveToDownloads(): Boolean
     suspend fun setSaveToDownloads(enabled: Boolean)
+    suspend fun deleteAfterUpdate(): Boolean
+    suspend fun setDeleteAfterUpdate(enabled: Boolean)
     fun userActionNotRequiredConfigurable(): Boolean
     suspend fun userActionNotRequiredEnabled(): Boolean
     suspend fun setUserActionNotRequiredEnabled(enabled: Boolean)

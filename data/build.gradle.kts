@@ -18,6 +18,9 @@ kotlin {
     sourceSets {
         val jvmMain = create("jvmMain") {
             dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.jbcrypt)
+            }
         }
         commonMain.dependencies {
             implementation(projects.domain)
@@ -44,6 +47,7 @@ kotlin {
         named("desktopTest").dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
     }
 }

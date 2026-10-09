@@ -1,15 +1,17 @@
-# AppMarket
+# AppHarbor
 
 基于 **Kotlin Multiplatform** 的现代化跨平台应用商店，支持 **Android** 与 **Desktop (JVM)**。采用 **miuix** 设计语言，拥有流畅优雅的视觉交互，聚合多家主流应用源。
 
+AppHarbor 原名 AppMarket，采用蓝色港湾 A 与海浪图标。Android 图标支持自适应形状；Android 13+ 可在支持的桌面开启主题图标，随壁纸取色。可查看 [彩色与莫奈图标预览](branding/appharbor/preview.png) 和 [图标资源说明](branding/appharbor/README.md)。应用包名仍为 `com.app.market`，保留现有数据兼容性。
+
 > [!NOTE]
 >
-> 本仓库 Fork 自上游 [Uevo001/AppMarket](https://github.com/Uevo001/AppMarket)，并在其基础上持续开发：新增 F-Droid 来源（索引缓存更新检查 + 签名门控）、历史版本多源路由、好游快爆来源等。上游 remote 已配置（`upstream`），便于同步上游更新。
+> 本仓库 Fork 自上游 [YXBwbWFya2V0/AppMarket](https://github.com/YXBwbWFya2V0/AppMarket)，并在其基础上持续开发：新增 F-Droid 来源（索引缓存更新检查 + 签名门控）、历史版本多源路由、好游快爆来源等。上游 remote 已配置（`upstream`），便于同步上游更新。
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.12.0-blue?logo=jetpackcompose)](https://github.com/JetBrains/compose-multiplatform)
 [![miuix](https://img.shields.io/badge/UI-miuix-FF6900.svg)](https://github.com/compose-miuix-ui/miuix)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Desktop-green.svg)](https://github.com/YuKongA/AppMarket)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Desktop-green.svg)](https://github.com/YXBwbWFya2V0/AppMarket)
 [![Android Min SDK](<https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-brightgreen.svg?logo=android>)](https://android.com)
 [![JDK](https://img.shields.io/badge/JDK-21-orange.svg?logo=openjdk)](https://openjdk.org)
 
@@ -28,7 +30,7 @@
 
 ## 目录
 
-- [AppMarket](#appmarket)
+- [AppHarbor](#appharbor)
   - [目录](#目录)
   - [特性概览](#特性概览)
   - [支持的应用源](#支持的应用源)
@@ -75,12 +77,20 @@
 | **豌豆荚** (Wandoujia)     | `wandoujia` |     ✅      |   ✅\*   |    ❌    |    ✅    |     ❌      |    ❌    |    —     |    —     |
 | **好游快爆** (Kuaibao)     | `kuaibao`   |     ✅      |   ✅\*   |    ❌    |    ❌    |     ❌      |    ✅    |    —     |    —     |
 | **F-Droid**                |  `fdroid`   |     ✅      |  ✅\*\*  |    ❌    |    ✅    |     ❌      |    ❌    |    —     |    —     |
+| **应用宝** (Tencent)      |  `tencent`  |     ✅      |    ✅    |    ❌    |    ❌    |     ❌      |    ❌    |    —     |    —     |
+| **酷安** (CoolApk)         |  `coolapk`  |     ✅      |    ✅    |    ❌    |    ❌    |     ❌      |    ❌    |    —     |    —     |
 
 > _\* 注：豌豆荚与好游快爆无原生批量更新元数据协议，更新检查时目前转发到小米源处理。_
 >
 > _\*\* 注：F-Droid 基于仓库索引（index-v2）在本地比对更新，并做**签名指纹门控**——仅推荐与本机已安装应用签名兼容的更新（F-Droid 默认对 APK 重签名，与其他来源签名不互通）。首次使用更新检查需同步约 20MB 的 gzip 索引并构建本地缓存；搜索结果为官方接口固定返回的前 10 条，无分页。_
 
+酷安来源支持分页搜索、精确包名查询、应用详情、截图、全量 APK 下载、更新检查和手动更新。可在「设置」中分别选择酷安作为搜索来源和更新来源。更新检查按本机包名查询最新版本，每批最多并发 4 个请求；未收录或不可下载的应用会跳过。暂不提供评论、历史版本、今日内容或增量更新。
+
+酷安接口协议参考 [Obtainium 的 CoolApk 实现](https://github.com/ImranR98/Obtainium/blob/main/lib/app_sources/coolapk.dart)：使用动态 v2 Token 请求 `api2.coolapk.com/v6`，从下载接口重定向取得原始安装包地址，交由现有下载/安装流程处理并校验服务端提供的 MD5。采用配套的固定客户端版本和虚拟设备指纹；该来源不使用机型模拟设置。服务端若调整客户端版本要求，需同步更新请求指纹。
+
 ---
+
+应用宝来源支持关键词搜索、精确包名查询、详情与截图、全量 APK 下载、更新检查和手动更新。搜索使用官网 `sj.qq.com/search` 的应用列表；详情通过腾讯 `upage.html5.qq.com/wechat-apkinfo` 接口获取真实版本号，参考 [Obtainium 的相关讨论](https://github.com/ImranR98/Obtainium/issues/1848)，并优先校验 SHA-256（无有效 SHA-256 时使用 MD5）。官网搜索一次返回当前结果，无分页；更新检查按包名查询，每批最多并发 4 个请求。暂不支持评论、历史版本、今日内容、机型模拟或增量更新。
 
 ## 安装方式与安装器
 
@@ -97,6 +107,8 @@
    - 支持自定义交接给系统内其他第三方安装器或分发应用处理。
 
 ---
+
+「设置 → 下载与安装」提供独立的「更新后自动删除安装包」开关，默认关闭。开启后，仅对已安装应用的新版本安装任务生效：确认目标版本成功安装后，删除该任务对应的安装包（包括保存到 Download 的副本），支持标准、Shizuku、Root 和第三方安装器，以及重启后的安装结果恢复。新装、重装、降级和仅下载任务不会触发此项清理；失败或取消也不会触发。该开关与已有「保存到 Download」和第三方安装器「安装完成后删除安装包」设置独立，原有设置仍按原行为工作。
 
 ## 编译与开发
 

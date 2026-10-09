@@ -14,6 +14,8 @@ import com.app.market.domain.model.update.ManualUpdateRequest
 import com.app.market.domain.model.update.ManualUpdateResult
 import com.app.market.domain.exception.MarketException
 import com.app.market.domain.repository.FdroidRepository
+import com.app.market.domain.repository.TencentRepository
+import com.app.market.domain.repository.CoolapkRepository
 import com.app.market.domain.repository.HonorRepository
 import com.app.market.domain.repository.HuaweiRepository
 import com.app.market.domain.repository.KuaibaoRepository
@@ -41,6 +43,8 @@ internal class MarketSourceRepositoryImpl(
     private val tapTap: TapTapRepository,
     private val kuaibao: KuaibaoRepository,
     private val fdroid: FdroidRepository,
+    private val coolapk: CoolapkRepository,
+    private val tencent: TencentRepository,
 ) : MarketSourceRepository {
     override suspend fun search(source: AppSource, keyword: String, page: Int): SearchPage = when (source) {
         AppSource.XIAOMI -> market.search(keyword, page)
@@ -53,6 +57,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.TAPTAP -> tapTap.search(keyword, page)
         AppSource.KUAIBAO -> kuaibao.search(keyword, page)
         AppSource.FDROID -> fdroid.search(keyword, page)
+        AppSource.COOLAPK -> coolapk.search(keyword, page)
+        AppSource.TENCENT -> tencent.search(keyword, page)
     }
 
     override suspend fun appDetail(
@@ -79,6 +85,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.KUAIBAO -> kuaibao.appDetail(appId)
         // F-Droid 无站内数字 id，以 packageName 为真实键
         AppSource.FDROID -> fdroid.appDetail(packageName)
+        AppSource.COOLAPK -> coolapk.appDetail(appId, packageName)
+        AppSource.TENCENT -> tencent.appDetail(packageName)
     }
 
     override suspend fun appComments(source: AppSource, app: MarketAppInfo): AppComments {
@@ -111,6 +119,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.TAPTAP -> tapTap.downloadMeta(app)
         AppSource.KUAIBAO -> kuaibao.downloadMeta(app)
         AppSource.FDROID -> fdroid.downloadMeta(app)
+        AppSource.COOLAPK -> coolapk.downloadMeta(app)
+        AppSource.TENCENT -> tencent.downloadMeta(app)
     }
 
     override suspend fun downloadUpdateMeta(source: AppSource, app: MarketAppInfo): DownloadMeta = when (source) {
@@ -125,8 +135,10 @@ internal class MarketSourceRepositoryImpl(
         AppSource.HONOR -> honor.downloadUpdateMeta(app)
         AppSource.HUAWEI -> huawei.downloadUpdateMeta(app)
         AppSource.TAPTAP -> tapTap.downloadUpdateMeta(app)
-        // F-Droid 无更新来源资格（capabilities 已保证不会走到这里）；兜底走自身的下载解析
+        // F-Droid / 酷安使用自身全量下载解析。
         AppSource.FDROID -> fdroid.downloadMeta(app)
+        AppSource.COOLAPK -> coolapk.downloadMeta(app)
+        AppSource.TENCENT -> tencent.downloadMeta(app)
     }
 
     override suspend fun loadReconciledCachedUpdates(): List<MarketAppInfo> =
@@ -145,6 +157,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.KUAIBAO -> flow { emit(emptyList()) }
         // P2 起通过仓库索引做本地比对，首次调用会触发索引同步（约 20MB gzip）
         AppSource.FDROID -> flow { emit(fdroid.checkUpdates()) }
+        AppSource.COOLAPK -> flow { emit(coolapk.checkUpdates()) }
+        AppSource.TENCENT -> flow { emit(tencent.checkUpdates()) }
     }
 
     override suspend fun checkManualUpdate(source: AppSource, request: ManualUpdateRequest): ManualUpdateResult =
@@ -160,13 +174,15 @@ internal class MarketSourceRepositoryImpl(
             AppSource.HUAWEI -> huawei.checkManualUpdate(request)
             AppSource.TAPTAP -> tapTap.checkManualUpdate(request)
             AppSource.FDROID -> fdroid.checkManualUpdate(request)
+            AppSource.COOLAPK -> coolapk.checkManualUpdate(request)
+            AppSource.TENCENT -> tencent.checkManualUpdate(request)
         }
 
     override suspend fun goldMiFeed(source: AppSource, page: Int, pageSize: Int): TodayFeedPage =
         when (source) {
             AppSource.OPPO -> oppo.beautyFeed(page, pageSize)
-            // 豌豆荚 / 三星 / 华为 / 荣耀 / 好游快爆 / F-Droid 无独立今日内容，回退小米商店今日
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID ->
+            // 无独立今日内容的来源回退小米商店今日。
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID, AppSource.COOLAPK, AppSource.TENCENT ->
                 today.goldMiFeed(page, pageSize)
 
             AppSource.VIVO -> vivo.auroraFeed(page, pageSize)
@@ -176,7 +192,7 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle =
         when (source) {
             AppSource.OPPO -> oppo.beautyArticle(rId)
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID, AppSource.COOLAPK, AppSource.TENCENT ->
                 today.todayArticle(rId)
 
             AppSource.VIVO -> vivo.auroraArticle(rId)

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">App Store</string>
+    <string name="app_name">AppHarbor</string>
     <string name="install_channel_name">Download and install progress</string>
     <string name="install_alert_channel_name">Install results</string>
     <string name="install_notification_text">Preparing download</string>

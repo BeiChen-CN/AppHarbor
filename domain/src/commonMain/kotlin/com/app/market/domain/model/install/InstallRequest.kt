@@ -13,4 +13,6 @@ data class InstallRequest(
     val sourceSavedPackageId: String? = null,
     val icon: String = "",
     val marketSource: AppSource? = null,
+    /** Snapshot at task creation: enabled only for an upgrade of an already installed app. */
+    val deleteAfterUpdate: Boolean = false,
 )
