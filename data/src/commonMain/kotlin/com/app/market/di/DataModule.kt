@@ -79,6 +79,10 @@ import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.dsl.onClose
+import org.koin.core.qualifier.named
+import com.app.market.data.repository.ReleaseSourceRepository
+import com.app.market.data.remote.releases.ReleaseApi
+import com.app.market.data.remote.fdroid.IzzyApiConfig
 
 private val commonDataModule = module {
     single<CoroutineScope> {
@@ -129,6 +133,10 @@ private val commonDataModule = module {
     single { FdroidApiConfig() }
     singleOf(::FdroidApi)
     singleOf(::FdroidRepositoryImpl) { bind<FdroidRepository>() }
+    single(named("izzy")) { FdroidApi(get(), IzzyApiConfig, get(named("izzy"))) }
+    single<FdroidRepository>(named("izzy")) { FdroidRepositoryImpl(get(named("izzy")), get()) }
+    singleOf(::ReleaseApi)
+    single { ReleaseSourceRepository(get(), get(), get(), get(), get<com.app.market.data.remote.xiaomi.platform.DeviceDefaultsDataSource>().current().cpuArchitecture) }
     single { TencentApiConfig() }
     singleOf(::TencentApi)
     singleOf(::TencentRepositoryImpl) { bind<TencentRepository>() }
@@ -136,7 +144,13 @@ private val commonDataModule = module {
     single { CoolapkSigner() }
     single { CoolapkApi(get(), get(), get()) } onClose { it?.close() }
     singleOf(::CoolapkRepositoryImpl) { bind<CoolapkRepository>() }
-    singleOf(::MarketSourceRepositoryImpl) { bind<MarketSourceRepository>() }
+    single<MarketSourceRepository> {
+        MarketSourceRepositoryImpl(
+            market = get(), today = get(), vivo = get(), wandoujia = get(), oppo = get(),
+            samsung = get(), honor = get(), huawei = get(), tapTap = get(), kuaibao = get(),
+            fdroid = get(), coolapk = get(), tencent = get(), izzy = get(named("izzy")), releases = get(),
+        )
+    }
 
     singleOf(::RecordingDownloadRepositoryImpl) { bind<DownloadRepository>() }
 }

@@ -36,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -136,6 +138,7 @@ fun MainPage(
         pageCount = { tabs.size },
     )
     val mainPagerState = rememberMainPagerState(pagerState)
+    val hapticFeedback = LocalHapticFeedback.current
     val selectedPage = mainPagerState.selectedPage
     val isWideScreen = rememberIsWideScreen()
     var notificationPermissionRequested by remember { mutableStateOf(false) }
@@ -148,6 +151,9 @@ fun MainPage(
         }
     }
     val onTabClick: (Int, MainTab) -> Unit = { index, tab ->
+        if (index != mainPagerState.selectedPage) {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        }
         if (tab == MainTab.Search) onSearchTabClick() else mainPagerState.animateToPage(index)
     }
     val startInitialCheckAfterAppListPermission = {

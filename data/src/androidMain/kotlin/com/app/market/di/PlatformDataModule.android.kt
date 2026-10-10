@@ -52,9 +52,15 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import org.koin.core.qualifier.named
+import com.app.market.data.remote.fdroid.IzzyApiConfig
+import com.app.market.data.remote.releases.JvmReleaseApkInspector
+import com.app.market.data.remote.releases.ReleaseApkInspector
 import java.io.File
 
 internal actual val platformDataModule: Module = module {
+    single<ReleaseApkInspector> { JvmReleaseApkInspector(get()) }
+    single<FdroidIndexCache>(named("izzy")) { JvmFdroidIndexCache(File(get<Context>().cacheDir, "izzyondroid"), get(), IzzyApiConfig) }
     single { createAndroidHttpClient() }
     single<FdroidIndexCache> { JvmFdroidIndexCache(File(get<Context>().cacheDir, "fdroid"), get(), get()) }
     singleOf(::PreferencesDataSourceImpl) { bind<PreferencesDataSource>() }

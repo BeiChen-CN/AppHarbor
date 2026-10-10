@@ -45,6 +45,8 @@ internal class MarketSourceRepositoryImpl(
     private val fdroid: FdroidRepository,
     private val coolapk: CoolapkRepository,
     private val tencent: TencentRepository,
+    private val izzy: FdroidRepository,
+    private val releases: ReleaseSourceRepository,
 ) : MarketSourceRepository {
     override suspend fun search(source: AppSource, keyword: String, page: Int): SearchPage = when (source) {
         AppSource.XIAOMI -> market.search(keyword, page)
@@ -59,6 +61,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID -> fdroid.search(keyword, page)
         AppSource.COOLAPK -> coolapk.search(keyword, page)
         AppSource.TENCENT -> tencent.search(keyword, page)
+        AppSource.IZZYONDROID -> izzy.search(keyword, page)
+        AppSource.GITHUB, AppSource.GITLAB -> releases.search(source, keyword, page)
     }
 
     override suspend fun appDetail(
@@ -87,6 +91,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID -> fdroid.appDetail(packageName)
         AppSource.COOLAPK -> coolapk.appDetail(appId, packageName)
         AppSource.TENCENT -> tencent.appDetail(packageName)
+        AppSource.IZZYONDROID -> izzy.appDetail(packageName)
+        AppSource.GITHUB, AppSource.GITLAB -> releases.appDetail(source, appId, packageName)
     }
 
     override suspend fun appComments(source: AppSource, app: MarketAppInfo): AppComments {
@@ -121,6 +127,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID -> fdroid.downloadMeta(app)
         AppSource.COOLAPK -> coolapk.downloadMeta(app)
         AppSource.TENCENT -> tencent.downloadMeta(app)
+        AppSource.IZZYONDROID -> izzy.downloadMeta(app)
+        AppSource.GITHUB, AppSource.GITLAB -> releases.downloadMeta(source, app)
     }
 
     override suspend fun downloadUpdateMeta(source: AppSource, app: MarketAppInfo): DownloadMeta = when (source) {
@@ -139,6 +147,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID -> fdroid.downloadMeta(app)
         AppSource.COOLAPK -> coolapk.downloadMeta(app)
         AppSource.TENCENT -> tencent.downloadMeta(app)
+        AppSource.IZZYONDROID -> izzy.downloadMeta(app)
+        AppSource.GITHUB, AppSource.GITLAB -> releases.downloadMeta(source, app)
     }
 
     override suspend fun loadReconciledCachedUpdates(): List<MarketAppInfo> =
@@ -159,6 +169,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID -> flow { emit(fdroid.checkUpdates()) }
         AppSource.COOLAPK -> flow { emit(coolapk.checkUpdates()) }
         AppSource.TENCENT -> flow { emit(tencent.checkUpdates()) }
+        AppSource.IZZYONDROID -> flow { emit(izzy.checkUpdates()) }
+        AppSource.GITHUB, AppSource.GITLAB -> flow { emit(releases.checkUpdates(source)) }
     }
 
     override suspend fun checkManualUpdate(source: AppSource, request: ManualUpdateRequest): ManualUpdateResult =
@@ -176,13 +188,15 @@ internal class MarketSourceRepositoryImpl(
             AppSource.FDROID -> fdroid.checkManualUpdate(request)
             AppSource.COOLAPK -> coolapk.checkManualUpdate(request)
             AppSource.TENCENT -> tencent.checkManualUpdate(request)
+            AppSource.IZZYONDROID -> izzy.checkManualUpdate(request)
+            AppSource.GITHUB, AppSource.GITLAB -> releases.checkManualUpdate(source, request)
         }
 
     override suspend fun goldMiFeed(source: AppSource, page: Int, pageSize: Int): TodayFeedPage =
         when (source) {
             AppSource.OPPO -> oppo.beautyFeed(page, pageSize)
             // 无独立今日内容的来源回退小米商店今日。
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID, AppSource.COOLAPK, AppSource.TENCENT ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
                 today.goldMiFeed(page, pageSize)
 
             AppSource.VIVO -> vivo.auroraFeed(page, pageSize)
@@ -192,7 +206,7 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle =
         when (source) {
             AppSource.OPPO -> oppo.beautyArticle(rId)
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID, AppSource.COOLAPK, AppSource.TENCENT ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
                 today.todayArticle(rId)
 
             AppSource.VIVO -> vivo.auroraArticle(rId)
@@ -207,6 +221,7 @@ internal class MarketSourceRepositoryImpl(
     ): HistoricalVersionPage = when (source) {
         AppSource.WANDOUJIA -> wandoujia.historicalVersions(appId, packageName, offset)
         AppSource.FDROID -> fdroid.historicalVersions(packageName, offset)
+        AppSource.IZZYONDROID -> izzy.historicalVersions(packageName, offset)
         // 其余来源未声明 supportsHistoricalVersions，UI 不会进入；返回空页兜底
         else -> HistoricalVersionPage(items = emptyList(), nextOffset = null)
     }
@@ -215,6 +230,7 @@ internal class MarketSourceRepositoryImpl(
         when (source) {
             AppSource.WANDOUJIA -> wandoujia.historicalDownloadMeta(version)
             AppSource.FDROID -> fdroid.historicalDownloadMeta(version)
+            AppSource.IZZYONDROID -> izzy.historicalDownloadMeta(version)
             else -> throw MarketException("该来源不支持历史版本下载")
         }
 

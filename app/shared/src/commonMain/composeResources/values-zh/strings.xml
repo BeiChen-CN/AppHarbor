@@ -121,6 +121,10 @@
     <string name="source_wandoujia">豌豆荚</string>
     <string name="source_oppo">OPPO</string>
     <string name="source_samsung">三星</string>
+    <string name="source_izzyondroid">IzzyOnDroid</string>
+    <string name="source_github">GitHub</string>
+    <string name="source_gitlab">GitLab</string>
+    <string name="search_repository_hint">搜索应用或输入仓库链接</string>
     <string name="source_honor">荣耀</string>
     <string name="source_huawei">华为</string>
     <string name="source_taptap">TapTap</string>

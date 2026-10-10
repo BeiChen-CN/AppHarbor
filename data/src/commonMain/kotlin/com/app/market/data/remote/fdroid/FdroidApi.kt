@@ -33,6 +33,16 @@ internal data class FdroidApiConfig(
     val siteBase: String = "https://f-droid.org",
     val repoBase: String = "https://f-droid.org/repo",
     val archiveBase: String = "https://f-droid.org/archive",
+    val source: AppSource = AppSource.FDROID,
+    val indexedSearch: Boolean = false,
+)
+
+internal val IzzyApiConfig = FdroidApiConfig(
+    siteBase = "https://apt.izzysoft.de/fdroid",
+    repoBase = "https://apt.izzysoft.de/fdroid/repo",
+    archiveBase = "https://apt.izzysoft.de/fdroid/repo",
+    source = AppSource.IZZYONDROID,
+    indexedSearch = true,
 )
 
 internal const val FdroidApiUserAgent = "AppMarket (F-Droid source; +https://github.com/YXBwbWFya2V0/AppMarket)"
@@ -72,6 +82,25 @@ internal class FdroidApi(
      * 且不含版本信息；版本号在详情/下载阶段按包名补齐。
      */
     suspend fun search(keyword: String, page: Int): SearchPage {
+        if (config.indexedSearch) {
+            if (keyword.isBlank()) return SearchPage(emptyList(), false)
+            val matches = indexCache.summary().apps.entries.filter { (pkg, entry) ->
+                pkg.contains(keyword, true) || entry.displayName.contains(keyword, true) ||
+                    entry.summary.contains(keyword, true)
+            }.sortedWith(compareByDescending<Map.Entry<String, FdroidAppSummary>> { it.key.equals(keyword, true) }
+                .thenBy { it.value.displayName.lowercase() })
+            val offset = page.coerceAtLeast(0) * HistoryPageSize
+            val items = matches.drop(offset).take(HistoryPageSize).map { (pkg, entry) ->
+                MarketAppInfo(
+                    appId = fdroidStableId(pkg), packageName = pkg,
+                    displayName = entry.displayName.ifBlank { pkg }, publisherName = "",
+                    versionName = entry.latest?.versionName.orEmpty(), versionCode = entry.latest?.versionCode ?: 0L,
+                    icon = assetUrl(entry.icon), apkSize = entry.latest?.apkSize ?: 0L,
+                    ratingScore = 0.0, openLink = sitePage(pkg), source = config.source,
+                )
+            }
+            return SearchPage(items, offset + items.size < matches.size)
+        }
         if (keyword.isBlank() || page > 0) return SearchPage(emptyList(), hasMore = false)
         val root = getJson("${config.searchBase.trimEnd('/')}/api/search_apps") {
             parameter("q", keyword)
@@ -83,6 +112,7 @@ internal class FdroidApi(
         // P2：索引切片优先（长描述/截图/分类/版本文件信息），切片不可用再降级轻量 API
         val fragment = softFragment(packageName)
         if (fragment != null && fragment.versions.isNotEmpty()) return fragment.toAppDetail()
+        if (config.indexedSearch) throw MarketException("${config.source.token} 未收录该应用或索引不可用")
         return appDetailViaApi(packageName)
     }
 
@@ -93,6 +123,7 @@ internal class FdroidApi(
                 ?: fragment.versions.suggested()
             if (target != null) {
                 return fdroidDownloadMeta(
+                    source = config.source,
                     appId = app.appId,
                     packageName = app.packageName,
                     displayName = fragment.displayName().ifBlank { app.packageName },
@@ -101,9 +132,11 @@ internal class FdroidApi(
                     icon = assetUrl(fragment.icon.fdroidAssetPath()).ifBlank { app.icon },
                     url = assetUrl(target.apkName),
                     size = target.apkSize,
+                    hash = target.apkSha256,
                 )
             }
         }
+        if (config.indexedSearch) throw MarketException("${config.source.token} 未返回安装包信息")
         return downloadMetaViaApi(app)
     }
 
@@ -132,6 +165,7 @@ internal class FdroidApi(
             val next = offset.coerceAtLeast(0) + window.size
             return HistoricalVersionPage(items = items, nextOffset = next.takeIf { it < sorted.size })
         }
+        if (config.indexedSearch) return HistoricalVersionPage(emptyList(), null)
         return historicalVersionsViaApi(packageName, offset)
     }
 
@@ -141,6 +175,7 @@ internal class FdroidApi(
             val target = fragment.versions.firstOrNull { it.versionCode == version.versionCode }
             if (target != null) {
                 return fdroidDownloadMeta(
+                    source = config.source,
                     appId = version.appId,
                     packageName = version.packageName,
                     displayName = version.displayName.ifBlank { version.packageName },
@@ -149,9 +184,11 @@ internal class FdroidApi(
                     icon = version.icon,
                     url = assetUrl(target.apkName),
                     size = target.apkSize,
+                    hash = target.apkSha256,
                 )
             }
         }
+        if (config.indexedSearch) throw MarketException("${config.source.token} 未收录该历史版本")
         return historicalDownloadMetaViaApi(version)
     }
 
@@ -191,6 +228,7 @@ internal class FdroidApi(
             )
             return ManualUpdateResult(ManualUpdateStatus.UPDATE_AVAILABLE, app)
         }
+        if (config.indexedSearch) return ManualUpdateResult(ManualUpdateStatus.NOT_FOUND)
         return checkManualUpdateViaApi(request)
     }
 
@@ -224,7 +262,7 @@ internal class FdroidApi(
             installedVersionName = local.versionName,
             installedVersionCode = local.versionCode,
             installedSplits = local.splits,
-            source = AppSource.FDROID,
+            source = config.source,
         )
     }
 
@@ -261,7 +299,7 @@ internal class FdroidApi(
         ratingScore = 0.0,
         changeLog = latest?.whatsNew?.fdroidLocalized().orEmpty(),
         openLink = sitePage(packageName),
-        source = AppSource.FDROID,
+        source = config.source,
     )
 
     private fun FdroidAppFragment.displayName(): String = name.fdroidLocalized()
@@ -334,7 +372,7 @@ internal class FdroidApi(
             apkSize = 0L,
             ratingScore = 0.0,
             openLink = sitePage(packageName),
-            source = AppSource.FDROID,
+            source = config.source,
         )
         return AppDetail(
             app = app,
@@ -361,6 +399,7 @@ internal class FdroidApi(
             ?: throw MarketException("F-Droid 未提供该应用的可用版本")
         val (url, size) = resolveApk(app.packageName, target.versionCode)
         return fdroidDownloadMeta(
+            source = config.source,
             appId = app.appId,
             packageName = app.packageName,
             displayName = app.displayName.ifBlank { app.packageName },
@@ -402,6 +441,7 @@ internal class FdroidApi(
     private suspend fun historicalDownloadMetaViaApi(version: HistoricalVersion): DownloadMeta {
         val (url, size) = resolveApk(version.packageName, version.versionCode)
         return fdroidDownloadMeta(
+            source = config.source,
             appId = version.appId,
             packageName = version.packageName,
             displayName = version.displayName.ifBlank { version.packageName },
@@ -433,7 +473,7 @@ internal class FdroidApi(
             installedVersionName = request.versionName,
             installedVersionCode = request.versionCode,
             installedSplits = request.splits,
-            source = AppSource.FDROID,
+            source = config.source,
         )
         return if (latest.versionCode > request.versionCode) {
             ManualUpdateResult(ManualUpdateStatus.UPDATE_AVAILABLE, app)
@@ -518,14 +558,15 @@ internal class FdroidApi(
         apkSize = 0L,
         ratingScore = 0.0,
         openLink = sitePage(packageName),
-        source = AppSource.FDROID,
+        source = config.source,
     )
 
     private fun FdroidSearchEntry?.displayOrPackage(packageName: String): String =
         this?.displayName?.takeIf { it.isNotBlank() } ?: packageName
 
     private fun sitePage(packageName: String): String =
-        "${config.siteBase.trimEnd('/')}/en/packages/$packageName"
+        if (config.indexedSearch) "${config.siteBase.trimEnd('/')}/index/apk/$packageName"
+        else "${config.siteBase.trimEnd('/')}/en/packages/$packageName"
 
     // endregion
 
@@ -546,6 +587,8 @@ internal fun fdroidDownloadMeta(
     icon: String,
     url: String,
     size: Long,
+    source: AppSource = AppSource.FDROID,
+    hash: String = "",
 ): DownloadMeta = DownloadMeta(
     appId = appId,
     packageName = packageName,
@@ -554,8 +597,8 @@ internal fun fdroidDownloadMeta(
     versionCode = versionCode,
     url = url,
     size = size,
-    parts = listOf(DownloadPart(name = "", type = "base", url = url, size = size)),
+    parts = listOf(DownloadPart(name = "", type = "base", url = url, size = size, hash = hash)),
     icon = icon,
     requestHeaders = mapOf(HttpHeaders.UserAgent to FdroidApiUserAgent),
-    source = AppSource.FDROID,
+    source = source,
 )

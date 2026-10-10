@@ -159,6 +159,31 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             supportsUpdates = true,
             supportsHistoricalVersions = true,
         ),
+    ),
+    IZZYONDROID(
+        "izzyondroid",
+        SourceCapabilities(
+            supportsComments = false, supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false, reportsDeltaSize = false,
+            supportsTodayFeed = false, todayFullCoverOverlay = false,
+            supportsUpdates = true, supportsHistoricalVersions = true,
+        ),
+    ),
+    GITHUB(
+        "github",
+        SourceCapabilities(
+            supportsComments = false, supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false, reportsDeltaSize = false,
+            supportsTodayFeed = false, todayFullCoverOverlay = false, supportsUpdates = true,
+        ),
+    ),
+    GITLAB(
+        "gitlab",
+        SourceCapabilities(
+            supportsComments = false, supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false, reportsDeltaSize = false,
+            supportsTodayFeed = false, todayFullCoverOverlay = false, supportsUpdates = true,
+        ),
     );
 
     companion object {

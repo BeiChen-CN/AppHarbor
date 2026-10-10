@@ -57,6 +57,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.app.market.domain.model.download.DownloadState
 import com.app.market.domain.model.market.MarketAppInfo
+import com.app.market.domain.model.market.AppSource
 import com.app.market.resources.Res
 import com.app.market.resources.cancel
 import com.app.market.resources.clear_history
@@ -65,6 +66,7 @@ import com.app.market.resources.no_results
 import com.app.market.resources.open
 import com.app.market.resources.reserve
 import com.app.market.resources.search_hint
+import com.app.market.resources.search_repository_hint
 import com.app.market.resources.search_history
 import com.app.market.resources.update
 import com.app.market.ui.component.AdaptiveTopAppBar
@@ -200,7 +202,10 @@ fun SearchTab(
                                 },
                                 expanded = searchExpanded,
                                 onExpandedChange = { searchExpanded = it },
-                                label = stringResource(Res.string.search_hint),
+                                label = stringResource(
+                                    if (state.sources.any { it == AppSource.GITHUB || it == AppSource.GITLAB })
+                                        Res.string.search_repository_hint else Res.string.search_hint,
+                                ),
                                 interactionSource = interactionSource,
                                 modifier = Modifier
                                     .focusRequester(focusRequester)

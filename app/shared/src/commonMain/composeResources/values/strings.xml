@@ -120,6 +120,10 @@
     <string name="source_wandoujia">Wandoujia</string>
     <string name="source_oppo">OPPO</string>
     <string name="source_samsung">Samsung</string>
+    <string name="source_izzyondroid">IzzyOnDroid</string>
+    <string name="source_github">GitHub</string>
+    <string name="source_gitlab">GitLab</string>
+    <string name="search_repository_hint">Search apps or enter a repository URL</string>
     <string name="source_honor">Honor</string>
     <string name="source_huawei">Huawei</string>
     <string name="source_taptap">TapTap</string>

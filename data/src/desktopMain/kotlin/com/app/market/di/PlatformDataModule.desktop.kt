@@ -30,9 +30,15 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import org.koin.core.qualifier.named
+import com.app.market.data.remote.fdroid.IzzyApiConfig
+import com.app.market.data.remote.releases.JvmReleaseApkInspector
+import com.app.market.data.remote.releases.ReleaseApkInspector
 import java.io.File
 
 internal actual val platformDataModule: Module = module {
+    single<ReleaseApkInspector> { JvmReleaseApkInspector(get()) }
+    single<FdroidIndexCache>(named("izzy")) { JvmFdroidIndexCache(File(File(System.getProperty("user.home"), ".app-market"), "cache/izzyondroid"), get(), IzzyApiConfig) }
     single { createHttpClient() }
     // 与桌面端偏好设置同一根目录（~/.app-market），缓存目录由系统/用户清理策略管理
     single<FdroidIndexCache> {
