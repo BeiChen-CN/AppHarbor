@@ -32,11 +32,15 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.core.qualifier.named
 import com.app.market.data.remote.fdroid.IzzyApiConfig
+import com.app.market.data.remote.fdroid.TunaApiConfig
+import com.app.market.data.download.NetworkMetering
 import com.app.market.data.remote.releases.JvmReleaseApkInspector
 import com.app.market.data.remote.releases.ReleaseApkInspector
 import java.io.File
 
 internal actual val platformDataModule: Module = module {
+    single<NetworkMetering> { NetworkMetering { false } }
+    single<FdroidIndexCache>(named("tuna")) { JvmFdroidIndexCache(File(File(System.getProperty("user.home"), ".app-market"), "cache/fdroid-tuna"), get(), TunaApiConfig) }
     single<ReleaseApkInspector> { JvmReleaseApkInspector(get()) }
     single<FdroidIndexCache>(named("izzy")) { JvmFdroidIndexCache(File(File(System.getProperty("user.home"), ".app-market"), "cache/izzyondroid"), get(), IzzyApiConfig) }
     single { createHttpClient() }

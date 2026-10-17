@@ -169,6 +169,15 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             supportsUpdates = true, supportsHistoricalVersions = true,
         ),
     ),
+    FDROID_TUNA(
+        "fdroid_tuna",
+        SourceCapabilities(
+            supportsComments = false, supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false, reportsDeltaSize = false,
+            supportsTodayFeed = false, todayFullCoverOverlay = false,
+            supportsUpdates = true, supportsHistoricalVersions = true,
+        ),
+    ),
     GITHUB(
         "github",
         SourceCapabilities(

@@ -83,6 +83,9 @@ import org.koin.core.qualifier.named
 import com.app.market.data.repository.ReleaseSourceRepository
 import com.app.market.data.remote.releases.ReleaseApi
 import com.app.market.data.remote.fdroid.IzzyApiConfig
+import com.app.market.data.remote.fdroid.TunaApiConfig
+import com.app.market.data.download.MeteredDownloadRepository
+import com.app.market.domain.repository.MeteredDownloadConfirmation
 
 private val commonDataModule = module {
     single<CoroutineScope> {
@@ -135,6 +138,8 @@ private val commonDataModule = module {
     singleOf(::FdroidRepositoryImpl) { bind<FdroidRepository>() }
     single(named("izzy")) { FdroidApi(get(), IzzyApiConfig, get(named("izzy"))) }
     single<FdroidRepository>(named("izzy")) { FdroidRepositoryImpl(get(named("izzy")), get()) }
+    single(named("tuna")) { FdroidApi(get(), TunaApiConfig, get(named("tuna"))) }
+    single<FdroidRepository>(named("tuna")) { FdroidRepositoryImpl(get(named("tuna")), get()) }
     singleOf(::ReleaseApi)
     single { ReleaseSourceRepository(get(), get(), get(), get(), get<com.app.market.data.remote.xiaomi.platform.DeviceDefaultsDataSource>().current().cpuArchitecture) }
     single { TencentApiConfig() }
@@ -149,10 +154,14 @@ private val commonDataModule = module {
             market = get(), today = get(), vivo = get(), wandoujia = get(), oppo = get(),
             samsung = get(), honor = get(), huawei = get(), tapTap = get(), kuaibao = get(),
             fdroid = get(), coolapk = get(), tencent = get(), izzy = get(named("izzy")), releases = get(),
+            tuna = get(named("tuna")),
         )
     }
 
-    singleOf(::RecordingDownloadRepositoryImpl) { bind<DownloadRepository>() }
+    singleOf(::RecordingDownloadRepositoryImpl)
+    single { MeteredDownloadRepository(get<RecordingDownloadRepositoryImpl>(), get()) }
+    single<DownloadRepository> { get<MeteredDownloadRepository>() }
+    single<MeteredDownloadConfirmation> { get<MeteredDownloadRepository>() }
 }
 
 internal expect val platformDataModule: Module

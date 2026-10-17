@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,8 +69,11 @@ import com.app.market.resources.reserve
 import com.app.market.resources.search_hint
 import com.app.market.resources.search_repository_hint
 import com.app.market.resources.search_history
+import com.app.market.resources.search_sources
+import com.app.market.resources.switch_search_source
 import com.app.market.resources.update
 import com.app.market.ui.component.AdaptiveTopAppBar
+import com.app.market.ui.component.AppTextButton
 import com.app.market.ui.component.AppRow
 import com.app.market.ui.component.LoadingBox
 import com.app.market.ui.component.PageVerticalPadding
@@ -77,6 +81,7 @@ import com.app.market.ui.component.blur.BlurredBar
 import com.app.market.ui.component.blur.rememberBlurBackdrop
 import com.app.market.ui.model.AppActionKind
 import com.app.market.ui.util.installActionText
+import com.app.market.ui.util.appSourceLabel
 import com.app.market.ui.util.rememberIsWideScreen
 import com.app.market.viewmodel.SearchUiState
 import com.app.market.viewmodel.SearchViewModel
@@ -93,6 +98,9 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
+import top.yukonga.miuix.kmp.preference.RadioButtonLocation
+import top.yukonga.miuix.kmp.window.WindowDialog
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import kotlin.math.roundToInt
@@ -134,6 +142,7 @@ fun SearchTab(
         fraction = { scrollBehavior.state.collapsedFraction },
     )
     var searchExpanded by remember { mutableStateOf(false) }
+    var showSourcePicker by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
     val focusManager = LocalFocusManager.current
@@ -188,6 +197,16 @@ fun SearchTab(
                     title = stringResource(Res.string.nav_search),
                     color = barColor,
                     scrollBehavior = scrollBehavior,
+                    actions = {
+                        AppTextButton(
+                            text = stringResource(Res.string.switch_search_source),
+                            onClick = {
+                                dismissSearchInput()
+                                showSourcePicker = true
+                            },
+                            modifier = Modifier.padding(end = 12.dp),
+                        )
+                    },
                     bottomContent = {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -267,6 +286,32 @@ fun SearchTab(
                     )
                 }
             }
+        }
+    }
+    WindowDialog(
+        show = showSourcePicker,
+        title = stringResource(Res.string.search_sources),
+        onDismissRequest = { showSourcePicker = false },
+    ) {
+        Column {
+            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp).scrollEndHaptic().overScrollVertical()) {
+                items(AppSource.entries, key = { it.token }) { source ->
+                    RadioButtonPreference(
+                        title = appSourceLabel(source),
+                        selected = source in state.sources,
+                        radioButtonLocation = RadioButtonLocation.End,
+                        onClick = {
+                            viewModel.setSearchSource(source)
+                            showSourcePicker = false
+                        },
+                    )
+                }
+            }
+            AppTextButton(
+                text = stringResource(Res.string.cancel),
+                onClick = { showSourcePicker = false },
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

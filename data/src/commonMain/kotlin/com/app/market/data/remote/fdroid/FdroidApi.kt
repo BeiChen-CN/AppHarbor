@@ -45,6 +45,13 @@ internal val IzzyApiConfig = FdroidApiConfig(
     indexedSearch = true,
 )
 
+internal val TunaApiConfig = FdroidApiConfig(
+    repoBase = "https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo",
+    archiveBase = "https://mirrors.tuna.tsinghua.edu.cn/fdroid/archive",
+    source = AppSource.FDROID_TUNA,
+    indexedSearch = true,
+)
+
 internal const val FdroidApiUserAgent = "AppMarket (F-Droid source; +https://github.com/YXBwbWFya2V0/AppMarket)"
 
 /** 搜索接口仅返回名称/简介/图标/页面链接；包名从页面链接末段解析。 */
@@ -565,7 +572,7 @@ internal class FdroidApi(
         this?.displayName?.takeIf { it.isNotBlank() } ?: packageName
 
     private fun sitePage(packageName: String): String =
-        if (config.indexedSearch) "${config.siteBase.trimEnd('/')}/index/apk/$packageName"
+        if (config.source == AppSource.IZZYONDROID) "${config.siteBase.trimEnd('/')}/index/apk/$packageName"
         else "${config.siteBase.trimEnd('/')}/en/packages/$packageName"
 
     // endregion

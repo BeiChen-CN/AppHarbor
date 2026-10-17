@@ -29,6 +29,7 @@ import com.app.market.platform.UiPlatform
 import com.app.market.ui.model.AppActionKind
 import com.app.market.ui.model.SearchResultItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -40,12 +41,57 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelUpdateDownloadTest {
+    @Test
+    fun switchingSearchSourcePersistsAndRerunsCurrentKeyword() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val sources = RecordingSearchSources()
+            val preferences = SearchPreferences()
+            val viewModel = searchViewModel(sources, RecordingDownloads(), preferences)
+            advanceUntilIdle()
+            viewModel.searchWith("first")
+            advanceUntilIdle()
+            viewModel.setKeyword("current")
+            viewModel.setSearchSource(AppSource.FDROID_TUNA)
+            advanceUntilIdle()
+            assertEquals(setOf(AppSource.FDROID_TUNA), preferences.searchSources.value)
+            assertEquals(listOf(AppSource.HONOR to "first", AppSource.FDROID_TUNA to "current"), sources.searchRequests)
+            assertEquals("current", viewModel.uiState.value.activeKeyword)
+            assertEquals(setOf(AppSource.FDROID_TUNA), viewModel.uiState.value.sources)
+            viewModel.setSearchSource(AppSource.FDROID_TUNA)
+            advanceUntilIdle()
+            assertEquals(2, sources.searchRequests.size)
+        } finally { Dispatchers.resetMain() }
+    }
+
+    @Test
+    fun switchingDuringInitialSearchCancelsOldSourceAndSearchesNewSource() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            val sources = RecordingSearchSources().apply { holdHonorSearch = CompletableDeferred() }
+            val viewModel = searchViewModel(sources, RecordingDownloads())
+            advanceUntilIdle()
+            viewModel.searchWith("pending")
+            runCurrent()
+            assertEquals(true, viewModel.uiState.value.loading)
+            viewModel.setSearchSource(AppSource.FDROID_TUNA)
+            advanceUntilIdle()
+            sources.holdHonorSearch!!.complete(Unit)
+            advanceUntilIdle()
+            assertEquals(listOf(AppSource.HONOR to "pending", AppSource.FDROID_TUNA to "pending"), sources.searchRequests)
+            assertEquals("pending", viewModel.uiState.value.activeKeyword)
+            assertEquals(false, viewModel.uiState.value.loading)
+            assertEquals(setOf(AppSource.FDROID_TUNA), viewModel.uiState.value.sources)
+        } finally { Dispatchers.resetMain() }
+    }
+
     @Test
     fun updateActionRequestsUpdateMetadata() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -89,10 +135,11 @@ class SearchViewModelUpdateDownloadTest {
     private fun searchViewModel(
         sources: RecordingSearchSources,
         downloads: RecordingDownloads,
+        preferences: SearchPreferences = SearchPreferences(),
     ) = SearchViewModel(
         sources = sources,
         historyStore = EmptySearchHistory,
-        updatePrefs = SearchPreferences(),
+        updatePrefs = preferences,
         packages = EmptyPackages,
         downloads = downloads,
         uiPlatform = SilentUiPlatform,
@@ -118,6 +165,8 @@ class SearchViewModelUpdateDownloadTest {
 }
 
 private class RecordingSearchSources : MarketSourceRepository {
+    val searchRequests = mutableListOf<Pair<AppSource, String>>()
+    var holdHonorSearch: CompletableDeferred<Unit>? = null
     val updateRequests = mutableListOf<String>()
     val installRequests = mutableListOf<String>()
 
@@ -131,7 +180,11 @@ private class RecordingSearchSources : MarketSourceRepository {
         return app.downloadMeta()
     }
 
-    override suspend fun search(source: AppSource, keyword: String, page: Int): SearchPage = error("Not used")
+    override suspend fun search(source: AppSource, keyword: String, page: Int): SearchPage {
+        searchRequests += source to keyword
+        if (source == AppSource.HONOR) holdHonorSearch?.await()
+        return SearchPage(emptyList(), false)
+    }
     override suspend fun appDetail(
         source: AppSource,
         appId: Long,

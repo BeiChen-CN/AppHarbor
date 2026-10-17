@@ -129,6 +129,13 @@
     <string name="source_taptap">TapTap</string>
     <string name="source_kuaibao">Haoyou Kuaibao</string>
     <string name="source_fdroid">F-Droid</string>
+    <string name="source_fdroid_tuna">F-Droid (Tsinghua mirror)</string>
+    <string name="switch_search_source">Switch source</string>
+    <string name="metered_download_title">Download using mobile data?</string>
+    <string name="metered_download_message">You are on mobile data or a metered network. Download %1$d app(s)?</string>
+    <string name="metered_download_size">Estimated download: %1$s. Actual data usage may vary.</string>
+    <string name="metered_download_size_unknown">Some download sizes are unavailable. Data charges may apply.</string>
+    <string name="metered_download_continue">Continue downloading</string>
     <string name="source_coolapk">CoolApk</string>
     <string name="historical_versions">Historical versions</string>
     <string name="historical_versions_summary">View all versions</string>

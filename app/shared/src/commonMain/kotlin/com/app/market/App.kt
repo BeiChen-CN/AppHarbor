@@ -25,6 +25,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.app.market.domain.model.install.InstallUserAction
 import com.app.market.domain.repository.DownloadRepository
+import com.app.market.domain.repository.MeteredDownloadConfirmation
 import com.app.market.domain.repository.InstallerPreferencesRepository
 import com.app.market.domain.repository.ProfileRepository
 import com.app.market.domain.repository.ThemePreferencesRepository
@@ -33,6 +34,11 @@ import com.app.market.platform.ApplyPredictiveBackPreference
 import com.app.market.platform.UiPlatform
 import com.app.market.resources.Res
 import com.app.market.resources.cancel
+import com.app.market.resources.metered_download_title
+import com.app.market.resources.metered_download_message
+import com.app.market.resources.metered_download_size
+import com.app.market.resources.metered_download_size_unknown
+import com.app.market.resources.metered_download_continue
 import com.app.market.resources.confirm
 import com.app.market.resources.go_to_settings
 import com.app.market.resources.install_failed_title
@@ -48,6 +54,7 @@ import com.app.market.ui.theme.LocalEnableFloatingBottomBarBlur
 import com.app.market.ui.theme.LocalEnableNavigationBadge
 import com.app.market.ui.theme.parseColorSchemeMode
 import com.app.market.ui.util.LocalStripAppNameSubtitle
+import com.app.market.ui.util.formatSize
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -70,6 +77,8 @@ fun App(
 ) {
     val profileStore = koinInject<ProfileRepository>()
     val downloads = koinInject<DownloadRepository>()
+    val meteredConfirmation = koinInject<MeteredDownloadConfirmation>()
+    val pendingDownloads by meteredConfirmation.pendingDownloads.collectAsStateWithLifecycle()
     val uiPlatform = koinInject<UiPlatform>()
     val updatePrefs = koinInject<UpdatePreferencesRepository>()
     val themePrefs = koinInject<ThemePreferencesRepository>()
@@ -126,6 +135,36 @@ fun App(
                 externalOpenDownloads = externalOpenDownloads,
                 onExternalDownloadsConsumed = onExternalDownloadsConsumed,
             )
+            WindowDialog(
+                show = pendingDownloads.isNotEmpty(),
+                title = stringResource(Res.string.metered_download_title),
+                onDismissRequest = meteredConfirmation::dismissDownloads,
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(Res.string.metered_download_message, pendingDownloads.size))
+                    val knownSize = pendingDownloads.sumOf { it.meta.size.coerceAtLeast(0L) }
+                    if (knownSize > 0L) {
+                        Text(stringResource(Res.string.metered_download_size, formatSize(knownSize)))
+                    }
+                    if (pendingDownloads.any { it.meta.size <= 0L }) {
+                        Text(stringResource(Res.string.metered_download_size_unknown))
+                    }
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        AppTextButton(
+                            text = stringResource(Res.string.cancel),
+                            onClick = meteredConfirmation::dismissDownloads,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        AppTextButton(
+                            text = stringResource(Res.string.metered_download_continue),
+                            onClick = meteredConfirmation::confirmDownloads,
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
             InstallFailureDialog(
                 show = failureMessage != null,
                 message = failureMessage ?: retainedFailureMessage,

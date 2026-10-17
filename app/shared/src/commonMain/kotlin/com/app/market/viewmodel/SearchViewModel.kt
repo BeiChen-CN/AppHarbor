@@ -127,6 +127,10 @@ class SearchViewModel(
         }
     }
 
+    fun setSearchSource(source: AppSource) {
+        viewModelScope.launch { updatePrefs.setSearchSources(setOf(source)) }
+    }
+
     fun clearSearch() {
         // Cancel the in-flight search and drop loading; else the spinner stays up and the late result
         // repopulates the just-cancelled search.
@@ -161,8 +165,11 @@ class SearchViewModel(
     }
 
     private fun rerunActiveSearch() {
-        val keyword = _uiState.value.activeKeyword
-        if (keyword.isBlank()) return
+        val keyword = _uiState.value.keyword.trim()
+        if (keyword.isBlank()) {
+            clearSearch()
+            return
+        }
         executeSearch(keyword, recordHistory = false, keepResults = false)
     }
 
