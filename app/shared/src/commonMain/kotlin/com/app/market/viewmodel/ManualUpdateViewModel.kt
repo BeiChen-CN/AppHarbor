@@ -7,11 +7,18 @@ import com.app.market.domain.model.download.DownloadState
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.update.ManualUpdateRequest
 import com.app.market.domain.model.update.ManualUpdateStatus
+import com.app.market.domain.model.update.aggregateManualUpdate
+import com.app.market.domain.model.update.UpdateSourceTimeoutException
+import com.app.market.domain.model.update.DisabledUpdateSourceException
+import com.app.market.domain.repository.FeaturePreferencesRepository
+import com.app.market.domain.repository.updateSelectionPolicy
 import com.app.market.domain.repository.DownloadRepository
 import com.app.market.domain.repository.MarketSourceRepository
 import com.app.market.domain.repository.UpdatePreferencesRepository
 import com.app.market.resources.Res
 import com.app.market.resources.manual_update_required
+import com.app.market.resources.source_timeout
+import com.app.market.resources.pinned_source_disabled_hint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +43,7 @@ class ManualUpdateViewModel(
     private val sources: MarketSourceRepository,
     private val prefs: UpdatePreferencesRepository,
     private val downloads: DownloadRepository,
+    private val features: FeaturePreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ManualUpdateUiState())
@@ -65,6 +73,9 @@ class ManualUpdateViewModel(
         }
         viewModelScope.launch {
             runCatchingCancellable {
+                if (features.settings.value.aggregateUpdates) return@runCatchingCancellable sources.aggregateManualUpdate(
+                    ManualUpdateRequest(packageName = packageName, versionCode = versionCode),
+                    sources = features.settings.value.aggregateSources.toList(), policy = features.settings.value.updateSelectionPolicy)
                 sources.checkManualUpdate(
                     source = prefs.updateSource.value, request = ManualUpdateRequest(
                         packageName = packageName,
@@ -86,10 +97,15 @@ class ManualUpdateViewModel(
                     }
                 }
             }.onFailure { error ->
+                val message = when (error) {
+                    is UpdateSourceTimeoutException -> getString(Res.string.source_timeout)
+                    is DisabledUpdateSourceException -> getString(Res.string.pinned_source_disabled_hint)
+                    else -> error.message ?: "请求失败"
+                }
                 _uiState.update {
                     it.copy(
                         loading = false,
-                        errorMessage = error.message ?: "请求失败",
+                        errorMessage = message,
                         result = null,
                         noApk = false,
                         recognizedNoUpdate = false,

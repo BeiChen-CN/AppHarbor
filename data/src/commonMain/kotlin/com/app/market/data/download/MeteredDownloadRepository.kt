@@ -6,6 +6,7 @@ import com.app.market.domain.model.download.taskKey
 import com.app.market.domain.repository.DownloadRepository
 import com.app.market.domain.repository.MeteredDownloadConfirmation
 import com.app.market.domain.repository.MeteredDownloadRequest
+import com.app.market.domain.repository.FeaturePreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.update
 internal class MeteredDownloadRepository(
     private val delegate: DownloadRepository,
     private val network: NetworkMetering,
+    private val features: FeaturePreferencesRepository? = null,
 ) : DownloadRepository by delegate, MeteredDownloadConfirmation {
     private val requests = MutableStateFlow<List<MeteredDownloadRequest>>(emptyList())
     override val pendingDownloads: StateFlow<List<MeteredDownloadRequest>> = requests.asStateFlow()
@@ -24,7 +26,7 @@ internal class MeteredDownloadRepository(
         val existing = taskStates.value[meta.taskKey]
         if (existing?.phase in setOf(DownloadPhase.QUEUED, DownloadPhase.DOWNLOADING,
                 DownloadPhase.INSTALLING, DownloadPhase.AWAITING_USER_ACTION)) return
-        if (!network.isMetered()) {
+        if (!network.isMetered() || features?.settings?.value?.onlyUnmeteredDownloads == true) {
             removePending(meta.packageName, meta.versionCode)
             delegate.start(meta, installAfterDownload)
             return
@@ -36,6 +38,7 @@ internal class MeteredDownloadRepository(
 
     override fun confirmDownloads() {
         val approved = requests.getAndUpdate { emptyList() }
+        // 确认期间策略可能发生变化；平台层仍会执行最新网络限制。
         approved.forEach { delegate.start(it.meta, it.installAfterDownload) }
     }
 

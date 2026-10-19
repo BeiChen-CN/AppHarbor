@@ -3,6 +3,10 @@ package com.app.market.viewmodel
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.market.domain.exception.CommentSourceResolutionException
+import com.app.market.resources.Res
+import com.app.market.resources.comments_unresolved
+import org.jetbrains.compose.resources.getString
 import com.app.market.domain.model.download.DownloadState
 import com.app.market.domain.model.market.AppComments
 import com.app.market.domain.model.market.AppDetail
@@ -15,6 +19,11 @@ import com.app.market.domain.repository.MarketRepository
 import com.app.market.domain.repository.MarketSourceRepository
 import com.app.market.domain.repository.PackageRepository
 import com.app.market.domain.repository.UpdatePreferencesRepository
+import com.app.market.domain.repository.FeaturePreferencesRepository
+import com.app.market.domain.repository.effectiveCommentSource
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import com.app.market.platform.UiPlatform
 import com.app.market.ui.model.AppActionKind
 import com.app.market.ui.model.actionKind
@@ -37,6 +46,9 @@ data class AppDetailUiState(
     val detail: AppDetail? = null,
     /** Primary action for [detail]; derived from the app's resolved installed version (no I/O). */
     val actionKind: AppActionKind? = null,
+    val commentsLoading: Boolean = false,
+    val commentsError: String = "",
+    val comments: AppComments = AppComments(emptyList(), 0L),
 )
 
 class AppDetailViewModel(
@@ -45,6 +57,7 @@ class AppDetailViewModel(
     private val downloads: DownloadRepository,
     private val prefs: UpdatePreferencesRepository,
     private val uiPlatform: UiPlatform,
+    private val features: FeaturePreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppDetailUiState())
@@ -56,12 +69,21 @@ class AppDetailViewModel(
     val showComments: StateFlow<Boolean> = prefs.showAppComments
     val showSameDeveloper: StateFlow<Boolean> = prefs.showSameDeveloper
     val showPromotions: StateFlow<Boolean> = prefs.showPromotions
+    val featureSettings = features.settings
+    private var commentsJob: Job? = null
+    private var commentsGeneration = 0
+    private var commentsRequestKey: String? = null
 
     // in-flight 去重靠 job 而非布尔标记：失败后必须允许重新加载，否则错误态永久卡死
     private var loadJob: Job? = null
     private val pendingDownloads = mutableSetOf<String>()
 
     init {
+        viewModelScope.launch {
+            combine(prefs.initialized, prefs.showAppComments, features.settings.map { it.commentSource }.distinctUntilChanged()) {
+                ready, enabled, source -> Triple(ready, enabled, source)
+            }.collect { if (it.first) loadComments(force = false) }
+        }
         viewModelScope.launch {
             packages.changes.collect { change ->
                 refreshInstalledState(change)
@@ -96,25 +118,48 @@ class AppDetailViewModel(
     }
 
     private fun loadOptionalSections(source: AppSource, detail: AppDetail) {
+        loadComments(force = false)
         viewModelScope.launch {
             prefs.initialized.first { it }
             supervisorScope {
-                if (prefs.showAppComments.value) launch {
-                    runCatchingCancellable { sources.appComments(source, detail.app) }
-                        .onSuccess { comments ->
-                            updateCurrentDetail(detail) {
-                                it.copy(
-                                    comments = comments.items,
-                                    commentCount = maxOf(it.commentCount, comments.totalCount),
-                                )
-                            }
-                        }
-                }
                 if (prefs.showSameDeveloper.value) launch {
                     runCatchingCancellable { sources.sameDeveloperApps(source, detail.app) }
                         .onSuccess { apps -> updateCurrentDetail(detail) { it.copy(sameDeveloperApps = apps) } }
                 }
             }
+        }
+    }
+
+    fun setCommentSource(source: AppSource?) {
+        viewModelScope.launch {
+            features.setCommentSource(source)
+            prefs.setShowAppComments(true)
+        }
+    }
+
+    fun reloadComments() = loadComments(force = true)
+
+    private fun loadComments(force: Boolean) {
+        val detail = _uiState.value.detail ?: return
+        if (!prefs.initialized.value) return
+        val source = effectiveCommentSource(features.settings.value.commentSource, detail.app.source)
+        val key = "${detail.app.source}:${detail.app.appId}:${detail.app.packageName}:$source:${prefs.showAppComments.value}"
+        if (!force && key == commentsRequestKey) return
+        commentsRequestKey = key
+        commentsJob?.cancel()
+        val generation = ++commentsGeneration
+        _uiState.update { it.copy(commentsLoading = false, commentsError = "", comments = AppComments(emptyList(), 0L)) }
+        if (!prefs.showAppComments.value) return
+        if (!source.capabilities.supportsComments) return
+        commentsJob = viewModelScope.launch {
+            _uiState.update { it.copy(commentsLoading = true) }
+            val result = runCatchingCancellable { sources.appComments(source, detail.app) }
+            val errorMessage = if (result.exceptionOrNull() is CommentSourceResolutionException) getString(Res.string.comments_unresolved)
+                else result.exceptionOrNull()?.message.orEmpty()
+            if (generation != commentsGeneration) return@launch
+            _uiState.update { current -> current.copy(commentsLoading = false,
+                commentsError = errorMessage,
+                comments = result.getOrNull() ?: AppComments(emptyList(), 0L)) }
         }
     }
 

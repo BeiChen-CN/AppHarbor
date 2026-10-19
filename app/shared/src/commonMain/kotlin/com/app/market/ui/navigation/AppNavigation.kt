@@ -61,7 +61,6 @@ fun AppNavigation(
     val updatesViewModel = koinViewModel<UpdatesViewModel>()
     val searchViewModel = koinViewModel<SearchViewModel>()
     val installerSettingsViewModel = koinViewModel<InstallerSettingsViewModel>()
-    val todayViewModel = koinViewModel<TodayViewModel>()
     val swipeBackDirection = if (LocalLayoutDirection.current == LayoutDirection.Rtl) {
         NavSwipeDirection.RightToLeft
     } else {
@@ -116,7 +115,6 @@ fun AppNavigation(
                     updatesViewModel = updatesViewModel,
                     searchViewModel = searchViewModel,
                     installerSettingsViewModel = installerSettingsViewModel,
-                    todayViewModel = todayViewModel,
                     pendingSearchKeyword = pendingSearchKeyword,
                     onPendingSearchConsumed = { pendingSearchKeyword = null },
                 )
@@ -166,7 +164,7 @@ fun AppNavigation(
             entry<Route.TodayArticle>(swipeDismiss = swipeBackDirection) { route ->
                 TodayArticleScreen(
                     rId = route.rId,
-                    viewModel = todayViewModel,
+                    viewModel = koinViewModel<TodayViewModel>(),
                     onOpenApp = {
                         navigator.push(
                             Route.AppDetail(

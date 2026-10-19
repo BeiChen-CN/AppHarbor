@@ -137,7 +137,7 @@ private class FakePreferences(
     override val showSameDeveloper = MutableStateFlow(false)
     override val showPromotions = MutableStateFlow(false)
     override val stripAppNameSubtitle = MutableStateFlow(false)
-    override val homePage = MutableStateFlow(HomePage.TODAY)
+    override val homePage = MutableStateFlow(HomePage.RECOMMENDATIONS)
     override val searchSources = MutableStateFlow(setOf(AppSource.XIAOMI))
     override val todaySource = MutableStateFlow(today)
     override val updateSource = MutableStateFlow(AppSource.XIAOMI)

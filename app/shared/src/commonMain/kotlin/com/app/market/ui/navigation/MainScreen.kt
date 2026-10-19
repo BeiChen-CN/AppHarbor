@@ -3,6 +3,8 @@ package com.app.market.ui.navigation
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -54,15 +56,18 @@ import com.app.market.platform.UiPlatform
 import com.app.market.resources.Res
 import com.app.market.resources.nav_search
 import com.app.market.resources.nav_settings
-import com.app.market.resources.nav_today
 import com.app.market.resources.nav_updates
+import com.app.market.resources.nav_recommendations
+import com.app.market.ui.screen.DiscoveryTab
+import com.app.market.viewmodel.DiscoveryViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import com.app.market.ui.component.FloatingBottomBar
+import com.app.market.ui.component.RecommendationTabIcon
 import com.app.market.ui.component.FloatingBottomBarItem
 import com.app.market.ui.component.blur.BlurredBar
 import com.app.market.ui.component.blur.rememberBlurBackdrop
 import com.app.market.ui.screen.SearchTab
 import com.app.market.ui.screen.SettingsTab
-import com.app.market.ui.screen.TodayTab
 import com.app.market.ui.screen.UpdatesTab
 import com.app.market.ui.theme.LocalEnableFloatingBottomBar
 import com.app.market.ui.theme.LocalEnableFloatingBottomBarBlur
@@ -70,7 +75,6 @@ import com.app.market.ui.theme.LocalEnableNavigationBadge
 import com.app.market.ui.util.rememberIsWideScreen
 import com.app.market.viewmodel.InstallerSettingsViewModel
 import com.app.market.viewmodel.SearchViewModel
-import com.app.market.viewmodel.TodayViewModel
 import com.app.market.viewmodel.UpdatesViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -100,7 +104,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
 // 主页签集合按平台能力裁剪：桌面端（无法扫描已装应用 / 安装）不含「更新」。
-private enum class MainTab { Today, Updates, Search, Settings }
+private enum class MainTab { Recommendations, Updates, Search, Settings }
 
 @Composable
 fun MainPage(
@@ -108,7 +112,6 @@ fun MainPage(
     updatesViewModel: UpdatesViewModel,
     searchViewModel: SearchViewModel,
     installerSettingsViewModel: InstallerSettingsViewModel,
-    todayViewModel: TodayViewModel,
     pendingSearchKeyword: String? = null,
     onPendingSearchConsumed: () -> Unit = {},
 ) {
@@ -121,7 +124,7 @@ fun MainPage(
     val appManagementSupported = uiPlatform.packageInstallationSupported
     val tabs = remember(appManagementSupported) {
         buildList {
-            add(MainTab.Today)
+            add(MainTab.Recommendations)
             if (appManagementSupported) add(MainTab.Updates)
             add(MainTab.Search)
             add(MainTab.Settings)
@@ -202,15 +205,12 @@ fun MainPage(
             verticalAlignment = Alignment.Top,
         ) { page ->
             when (tabs[page]) {
-                MainTab.Today -> TodayTab(
-                    viewModel = todayViewModel,
-                    updatesViewModel = updatesViewModel.takeIf { appManagementSupported },
-                    bottomPadding = bottomPadding,
-                    onClickViewUpdates = { tabs.indexOf(MainTab.Updates).takeIf { it >= 0 }?.let(mainPagerState::animateToPage) },
-                    onClickArticle = { article ->
-                        navigator.push(Route.TodayArticle(article.rId))
-                    },
-                )
+                MainTab.Recommendations -> {
+                    val viewModel = koinViewModel<DiscoveryViewModel>()
+                    DiscoveryTab(viewModel, bottomPadding, openDetail,
+                        updatesViewModel = updatesViewModel.takeIf { appManagementSupported },
+                        onViewUpdates = { tabs.indexOf(MainTab.Updates).takeIf { it >= 0 }?.let(mainPagerState::animateToPage) })
+                }
 
                 MainTab.Updates -> UpdatesTab(
                     viewModel = updatesViewModel,
@@ -300,7 +300,8 @@ fun MainPage(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+                    val tabWidth = ((maxWidth - 24.dp) / tabs.size).coerceAtMost(76.dp)
                     if (!enableFloatingBottomBar) {
                         BlurredBar(backdrop = blurBackdrop, blurActive = blurActive) {
                             NavigationBar(color = barColor) {
@@ -332,7 +333,7 @@ fun MainPage(
                             tabs.forEachIndexed { index, tab ->
                                 val label = stringResource(tab.labelRes)
                                 FloatingBottomBarItem(
-                                    modifier = Modifier.defaultMinSize(minWidth = 76.dp),
+                                    modifier = Modifier.width(tabWidth),
                                     selected = mainPagerState.selectedPage == index,
                                     onClick = { onTabClick(index, tab) },
                                 ) {
@@ -388,14 +389,14 @@ fun MainPage(
 }
 
 private fun HomePage.toTab(): MainTab = when (this) {
-    HomePage.TODAY -> MainTab.Today
     HomePage.UPDATES -> MainTab.Updates
     HomePage.SEARCH -> MainTab.Search
+    HomePage.RECOMMENDATIONS -> MainTab.Recommendations
 }
 
 private val MainTab.icon
     get() = when (this) {
-        MainTab.Today -> MiuixIcons.Create
+        MainTab.Recommendations -> RecommendationTabIcon
         MainTab.Updates -> MiuixIcons.Update
         MainTab.Search -> MiuixIcons.Search
         MainTab.Settings -> MiuixIcons.Settings
@@ -403,7 +404,7 @@ private val MainTab.icon
 
 private val MainTab.labelRes
     get() = when (this) {
-        MainTab.Today -> Res.string.nav_today
+        MainTab.Recommendations -> Res.string.nav_recommendations
         MainTab.Updates -> Res.string.nav_updates
         MainTab.Search -> Res.string.nav_search
         MainTab.Settings -> Res.string.nav_settings

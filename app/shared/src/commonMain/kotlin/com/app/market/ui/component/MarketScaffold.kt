@@ -123,6 +123,7 @@ fun CollapsibleContentTopAppBar(
     color: Color = MiuixTheme.colorScheme.surface,
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
+    persistentActions: @Composable RowScope.() -> Unit = {},
     expandedContentBehindToolbar: Boolean = false,
     applyWindowInsets: Boolean = true,
     expandedContent: @Composable () -> Unit,
@@ -195,6 +196,7 @@ fun CollapsibleContentTopAppBar(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    persistentActions()
                     if (compactContentVisible) actions()
                 }
             }
@@ -319,6 +321,7 @@ fun CollapsibleMarketScaffold(
     title: String,
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    persistentActions: @Composable RowScope.() -> Unit = {},
     expandedContentBehindToolbar: Boolean = false,
     expandedNavigationIconTint: Color = MiuixTheme.colorScheme.onSurface,
     showNavigationIcon: Boolean = true,
@@ -367,6 +370,7 @@ fun CollapsibleMarketScaffold(
                         }
                     },
                     actions = actions,
+                    persistentActions = persistentActions,
                     expandedContentBehindToolbar = expandedContentBehindToolbar,
                     applyWindowInsets = applyWindowInsets,
                     expandedContent = expandedContent,

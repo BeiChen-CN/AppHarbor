@@ -106,7 +106,7 @@ class StoreMigrationTest {
         advanceUntilIdle()
 
         assertTrue(prefs.initialized.value)
-        assertEquals(HomePage.TODAY, prefs.homePage.value)
+        assertEquals(HomePage.RECOMMENDATIONS, prefs.homePage.value)
         assertTrue(prefs.showSystemUpdates.value)
         scope.cancel()
     }

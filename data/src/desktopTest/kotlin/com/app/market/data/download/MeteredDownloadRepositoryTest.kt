@@ -8,6 +8,9 @@ import com.app.market.domain.model.download.taskKey
 import com.app.market.domain.model.install.DeltaFallback
 import com.app.market.domain.model.install.InstallUserAction
 import com.app.market.domain.repository.DownloadRepository
+import com.app.market.domain.repository.FeaturePreferences
+import com.app.market.domain.repository.FeaturePreferencesRepository
+import java.lang.reflect.Proxy
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.test.Test
@@ -15,6 +18,24 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MeteredDownloadRepositoryTest {
+    @Test
+    fun strictNetworkPolicyQueuesInPlatformInsteadOfOfferingMeteredOverride() {
+        val target = RecordingTarget()
+        val settings = MutableStateFlow(FeaturePreferences(onlyUnmeteredDownloads = true))
+        val features = Proxy.newProxyInstance(javaClass.classLoader, arrayOf(FeaturePreferencesRepository::class.java)) { _, method, _ ->
+            check(method.name == "getSettings")
+            settings
+        } as FeaturePreferencesRepository
+        val repository = MeteredDownloadRepository(target, NetworkMetering { true }, features)
+        repository.start(meta("one"), false)
+        assertTrue(repository.pendingDownloads.value.isEmpty())
+        assertEquals(listOf(meta("one") to false), target.started)
+        settings.value = FeaturePreferences(onlyUnmeteredDownloads = false)
+        repository.start(meta("two"), true)
+        assertEquals("two", repository.pendingDownloads.value.single().meta.packageName)
+        assertEquals(1, target.started.size)
+    }
+
     @Test
     fun unmeteredNetworkStartsWithoutConfirmation() {
         val target = RecordingTarget()

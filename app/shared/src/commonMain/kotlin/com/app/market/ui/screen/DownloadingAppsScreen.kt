@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.app.market.domain.model.download.DownloadPhase
 import com.app.market.domain.model.download.DownloadState
 import com.app.market.resources.Res
+import com.app.market.resources.waiting_unmetered
 import com.app.market.resources.download
 import com.app.market.resources.download_failed
 import com.app.market.resources.download_finished
@@ -170,7 +171,7 @@ private fun statusText(state: DownloadState): String = when (state.phase) {
     DownloadPhase.DOWNLOADING -> state.progress?.let { "$it%" }
         ?: stringResource(Res.string.downloading_short)
 
-    DownloadPhase.PAUSED -> state.progress
+    DownloadPhase.PAUSED -> if (state.waitingForUnmetered) stringResource(Res.string.waiting_unmetered) else state.progress
         ?.let { "${stringResource(Res.string.download_paused)} · $it%" }
         ?: stringResource(Res.string.download_paused)
 

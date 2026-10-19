@@ -49,6 +49,7 @@ internal class MarketSourceRepositoryImpl(
     private val releases: ReleaseSourceRepository,
     private val tuna: FdroidRepository,
 ) : MarketSourceRepository {
+    private val commentTargets = CommentTargetCache()
     override suspend fun search(source: AppSource, keyword: String, page: Int): SearchPage = when (source) {
         AppSource.XIAOMI -> market.search(keyword, page)
         AppSource.VIVO -> vivo.search(keyword, page)
@@ -102,11 +103,33 @@ internal class MarketSourceRepositoryImpl(
         if (!source.capabilities.supportsComments) return AppComments(emptyList(), 0L)
         return when (source) {
             // 好游快爆网页端有原生评论协议
-            AppSource.KUAIBAO -> kuaibao.appComments(app)
+            AppSource.KUAIBAO -> {
+                val target = if (app.source == AppSource.KUAIBAO) app else commentTargets.resolve(AppSource.KUAIBAO, app.packageName) {
+                    var match: MarketAppInfo? = null
+                    val checked = mutableSetOf<Long>()
+                    for (query in listOf(app.packageName, app.displayName).filter { it.isNotBlank() }.distinct()) {
+                        val hits = kuaibao.search(query, 0).items.take(8)
+                        for (hit in hits) {
+                            if (!checked.add(hit.appId)) continue
+                            val detail = try { kuaibao.appDetail(hit.appId).app }
+                            catch (error: kotlinx.coroutines.CancellationException) { throw error }
+                            catch (_: Exception) { continue }
+                            if (detail.packageName == app.packageName) { match = detail; break }
+                        }
+                        if (match != null) break
+                    }
+                    match ?: throw MarketException("好游快爆未收录此应用的评论")
+                }
+                try { kuaibao.appComments(target) }
+                catch (error: kotlinx.coroutines.CancellationException) { throw error }
+                catch (error: Exception) { commentTargets.invalidate(AppSource.KUAIBAO, app.packageName); throw error }
+            }
             AppSource.FDROID -> AppComments(emptyList(), 0L)
             else -> {
-                val xiaomi = app.onXiaomi()
-                market.appComments(xiaomi.appId, xiaomi.versionCode)
+                val xiaomi = if (app.source == AppSource.XIAOMI) app else commentTargets.resolve(AppSource.XIAOMI, app.packageName) { app.onXiaomi() }
+                try { market.appComments(xiaomi.appId, xiaomi.versionCode) }
+                catch (error: kotlinx.coroutines.CancellationException) { throw error }
+                catch (error: Exception) { commentTargets.invalidate(AppSource.XIAOMI, app.packageName); throw error }
             }
         }
     }

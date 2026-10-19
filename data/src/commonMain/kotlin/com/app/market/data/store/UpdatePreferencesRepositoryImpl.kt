@@ -57,7 +57,7 @@ internal class UpdatePreferencesRepositoryImpl(
     private val _stripAppNameSubtitle = MutableStateFlow(false)
     override val stripAppNameSubtitle: StateFlow<Boolean> = _stripAppNameSubtitle.asStateFlow()
 
-    private val _homePage = MutableStateFlow(HomePage.TODAY)
+    private val _homePage = MutableStateFlow(HomePage.RECOMMENDATIONS)
     override val homePage: StateFlow<HomePage> = _homePage.asStateFlow()
     private val _searchSources = MutableStateFlow(AppSource.Default)
     override val searchSources: StateFlow<Set<AppSource>> = _searchSources.asStateFlow()

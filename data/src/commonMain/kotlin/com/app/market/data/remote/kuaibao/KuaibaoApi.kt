@@ -112,6 +112,17 @@ internal class KuaibaoApi(
         return parseKuaibaoSearchResponse(text, page)
     }
 
+    suspend fun recommendations(page: Int): com.app.market.domain.model.today.TodayFeedPage {
+        if (page > 0) return com.app.market.domain.model.today.TodayFeedPage(emptyList(), false)
+        val response = client.get(config.apiBase.trimEnd('/') + "/") {
+            header(HttpHeaders.UserAgent, WebUserAgent)
+        }
+        if (!response.status.isSuccess()) throw MarketException("好游快爆推荐加载失败 HTTP ${response.status.value}")
+        val items = parseKuaibaoRecommendations(response.bodyAsText())
+        if (items.isEmpty()) throw MarketException("好游快爆未返回推荐内容")
+        return com.app.market.domain.model.today.TodayFeedPage(items, false)
+    }
+
     suspend fun appDetail(appId: Long): AppDetail {
         if (appId <= 0L) throw MarketException("好游快爆缺少站内应用 id")
         return coroutineScope {
@@ -264,6 +275,24 @@ internal class KuaibaoApi(
         response.headers[HttpHeaders.ContentLength]?.toLongOrNull() ?: 0L
     }.getOrDefault(0L)
 }
+
+/** 官网首页推荐块，使用真实站内 ID；未给包名的条目在打开详情后解析包名。 */
+internal fun parseKuaibaoRecommendations(html: String): List<com.app.market.domain.model.today.TodayFeaturedItem> =
+    KuaibaoItemRegex.findAll(html).mapNotNull { match ->
+        val block = match.value
+        val id = KuaibaoAppIdRegex.find(block)?.groupValues?.get(1)?.toLongOrNull() ?: return@mapNotNull null
+        val image = Regex("""<img\b[^>]*>""").find(block)?.value ?: return@mapNotNull null
+        val title = Regex("""alt=["']([^"']+)["']""").find(image)?.groupValues?.get(1)
+            ?.let(::kuaibaoPlainText)?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        val cover = Regex("""(?:data-src|src)=["']([^"']+)["']""").find(image)?.groupValues?.get(1)
+            ?.let(::normalizeKuaibaoUrl).orEmpty()
+        val description = Regex("""<p[^>]*class="desc"[^>]*>([\s\S]*?)</p>""").find(block)
+            ?.groupValues?.get(1)?.let(::kuaibaoPlainText).orEmpty()
+        val app = MarketAppInfo(id, "", title, "", "", 0, cover, 0, ratingScore = 0.0,
+            openLink = "https://www.3839.com/a/$id.htm", source = AppSource.KUAIBAO)
+        com.app.market.domain.model.today.TodayFeaturedItem(id.toString(), title, description, cover, app,
+            articleLink = app.openLink)
+    }.distinctBy { it.rId }.take(100).toList()
 
 internal fun normalizeKuaibaoUrl(url: String): String =
     when {

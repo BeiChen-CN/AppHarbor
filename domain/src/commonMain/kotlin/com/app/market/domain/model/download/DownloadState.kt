@@ -14,6 +14,7 @@ data class DownloadState(
     val versionName: String = "",
     val versionCode: Long = 0L,
     val source: AppSource? = null,
+    val waitingForUnmetered: Boolean = false,
 ) {
     val isComplete: Boolean get() = phase == DownloadPhase.DOWNLOADED && savedPackageId != null
     val isPaused: Boolean get() = phase == DownloadPhase.PAUSED

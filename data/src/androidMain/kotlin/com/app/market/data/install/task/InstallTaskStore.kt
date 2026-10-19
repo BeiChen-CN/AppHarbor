@@ -27,6 +27,7 @@ internal data class InstallTaskRecord(
     val externalInstallerPackage: String? = null,
     val errorMessage: String = "",
     val modifiedAt: Long = System.currentTimeMillis(),
+    val waitingForUnmetered: Boolean = false,
 )
 
 /** 安装任务记录。读走内存，写合并落盘——持久化只为跨进程存活。 */
@@ -105,6 +106,7 @@ internal class InstallTaskStore(
         sessionId?.let { put("sessionId", it) }
         externalInstallerPackage?.let { put("externalInstallerPackage", it) }
         put("modifiedAt", modifiedAt)
+        put("waitingForUnmetered", waitingForUnmetered)
     }
 
     private fun JSONObject.toRecord(): InstallTaskRecord? {
@@ -121,6 +123,7 @@ internal class InstallTaskStore(
             sessionId = if (has("sessionId")) optInt("sessionId") else null,
             externalInstallerPackage = optString("externalInstallerPackage").takeIf { it.isNotBlank() },
             modifiedAt = optLong("modifiedAt"),
+            waitingForUnmetered = optBoolean("waitingForUnmetered", false),
         )
     }
 

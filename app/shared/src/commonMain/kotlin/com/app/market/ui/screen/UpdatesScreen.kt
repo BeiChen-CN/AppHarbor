@@ -1,6 +1,5 @@
 package com.app.market.ui.screen
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -33,9 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -43,32 +41,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.app.market.domain.model.download.DownloadState
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.platform.UiPlatform
-import com.app.market.resources.Res
-import com.app.market.resources.app_list_permission_refresh_hint
-import com.app.market.resources.app_list_permission_required
-import com.app.market.resources.back
-import com.app.market.resources.collapse_change_log
-import com.app.market.resources.expand_change_log
-import com.app.market.resources.go_to_settings
-import com.app.market.resources.ignore_once
-import com.app.market.resources.ignore_permanent
-import com.app.market.resources.nav_updates
-import com.app.market.resources.no_change_log
-import com.app.market.resources.no_updates
-import com.app.market.resources.num_updates_pending
-import com.app.market.resources.update
-import com.app.market.resources.update_all
-import com.app.market.resources.update_check_failed
-import com.app.market.resources.updates_title
-import com.app.market.resources.version_transition
-import com.app.market.resources.version_transition_label
+import com.app.market.resources.*
+import com.app.market.ui.component.AppTextButton
+import com.app.market.domain.model.update.SourceCheckFailure
+import com.app.market.viewmodel.UpdatesUiState
+import com.app.market.ui.component.UpdateSourceDialog
+import com.app.market.ui.util.appSourceLabel
 import com.app.market.ui.component.AppActionButton
 import com.app.market.ui.component.AppButton
 import com.app.market.ui.component.AppIcon
@@ -84,10 +68,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -100,11 +81,17 @@ fun UpdatesTab(
 ) {
     val uiPlatform = koinInject<UiPlatform>()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val featureSettings by viewModel.featureSettings.collectAsStateWithLifecycle()
     val downloadStates = viewModel.downloadStates.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    var sourceApp by remember { mutableStateOf<MarketAppInfo?>(null) }
 
     MainTabScaffold(
-        title = stringResource(Res.string.nav_updates)
+        title = stringResource(Res.string.nav_updates),
+        actions = {
+            AppTextButton(stringResource(if (state.loading) Res.string.cancel_check else Res.string.check_again),
+                if (state.loading) viewModel::cancelCheck else viewModel::refresh, Modifier.padding(end = 12.dp))
+        },
     ) { topPadding, backdropModifier, scrollBehavior ->
         val listPadding = PaddingValues(
             start = 12.dp,
@@ -112,68 +99,89 @@ fun UpdatesTab(
             top = topPadding + PageVerticalPadding,
             bottom = bottomPadding + PageVerticalPadding,
         )
-        val content = when {
-            state.updates.isNotEmpty() -> UpdatesContent.Cards
-            state.loading -> UpdatesContent.Loading
-            state.appListPermissionRequired -> UpdatesContent.PermissionRequired
-            state.checkFailed -> UpdatesContent.Error
-            else -> UpdatesContent.Empty
-        }
-        // Fade between the full-screen states and the card list; keyed on the state shape so a data
-        // refresh doesn't re-fade the whole tree (cards animate individually via animateItem).
-        Crossfade(
-            targetState = content,
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MiuixTheme.colorScheme.surface)
-                .then(backdropModifier), label = "updates"
-        ) { target ->
-            when (target) {
-                UpdatesContent.Loading -> LoadingBox(Modifier.fillMaxSize().padding(listPadding))
-                UpdatesContent.PermissionRequired -> AppListPermissionRequiredState(
-                    modifier = Modifier.fillMaxSize().padding(listPadding),
-                    uiPlatform = uiPlatform,
-                )
-
-                UpdatesContent.Error -> UpdatesHint(
-                    stringResource(Res.string.update_check_failed),
-                    listPadding
-                )
-
-                UpdatesContent.Empty -> UpdatesHint(
-                    stringResource(Res.string.no_updates),
-                    listPadding
-                )
-
-                UpdatesContent.Cards -> UpdatesCardList(
-                    updates = state.updates,
-                    downloadStates = downloadStates,
-                    listState = listState,
-                    listPadding = listPadding,
-                    viewModel = viewModel,
-                    onOpenDetail = onOpenDetail,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .scrollEndHaptic()
-                        .overScrollVertical()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                )
+        val contentModifier = Modifier.fillMaxSize().then(backdropModifier).scrollEndHaptic()
+            .overScrollVertical().nestedScroll(scrollBehavior.nestedScrollConnection)
+        if (state.updates.isNotEmpty()) {
+            UpdatesCardList(
+                updates = state.updates,
+                checkState = state,
+                aggregate = featureSettings.aggregateUpdates,
+                downloadStates = downloadStates,
+                listState = listState,
+                listPadding = listPadding,
+                viewModel = viewModel,
+                onOpenDetail = onOpenDetail,
+                onChooseSource = if (featureSettings.aggregateUpdates) ({ sourceApp = it }) else null,
+                modifier = contentModifier,
+            )
+        } else {
+            LazyColumn(modifier = contentModifier, contentPadding = listPadding,
+                verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                updateCheckStatus(state, featureSettings.aggregateUpdates, viewModel)
+                item("result") {
+                    when {
+                        state.appListPermissionRequired -> AppListPermissionRequiredState(uiPlatform = uiPlatform)
+                        state.loading -> LoadingBox(Modifier.fillMaxWidth().height(120.dp))
+                        else -> Text(stringResource(when {
+                            state.cancelled -> Res.string.check_cancelled_hint
+                            state.checkFailed -> Res.string.update_check_failed
+                            state.failedSources.isNotEmpty() -> Res.string.partial_check_hint
+                            else -> Res.string.no_updates
+                        }), modifier = Modifier.fillMaxWidth().padding(24.dp), textAlign = TextAlign.Center)
+                    }
+                }
             }
+        }
+    }
+    sourceApp?.let { app ->
+        UpdateSourceDialog(app.displayName, app.packageName, viewModel.updateCandidates(app.packageName),
+            featureSettings.preferredUpdateSources[app.packageName], featureSettings.aggregateSources,
+            onSelect = { viewModel.setPreferredUpdateSource(app.packageName, it) }, onDismiss = { sourceApp = null })
+    }
+}
+
+private fun LazyListScope.updateCheckStatus(state: UpdatesUiState, aggregate: Boolean, viewModel: UpdatesViewModel) {
+    if (!aggregate && !state.cancelled) return
+    val failures = state.failures.entries.toList()
+    val retry = !state.loading && state.failedSources.isNotEmpty()
+    val headerLast = failures.isEmpty() && !retry
+    item("check-progress") {
+        CardSegmentContainer(isFirst = true, isLast = headerLast, horizontalPadding = 0.dp,
+            modifier = Modifier.padding(bottom = if (headerLast) 20.dp else 0.dp)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (aggregate) Text(stringResource(Res.string.aggregate_status, state.sourcesCompleted, state.sourcesTotal))
+                if (state.cancelled) Text(stringResource(Res.string.check_cancelled_hint))
+            }
+        }
+    }
+    itemsIndexed(failures, key = { _, entry -> "check-failure-${entry.key.token}" }) { index, (source, failure) ->
+        val last = index == failures.lastIndex && !retry
+        CardSegmentContainer(isFirst = false, isLast = last, horizontalPadding = 0.dp,
+            modifier = Modifier.padding(bottom = if (last) 20.dp else 0.dp)) {
+            Text(stringResource(Res.string.source_check_failure, appSourceLabel(source),
+                stringResource(if (failure == SourceCheckFailure.TIMEOUT) Res.string.source_timeout else Res.string.source_request_failed)),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary, style = MiuixTheme.textStyles.body2)
+        }
+    }
+    if (retry) item("retry-failed-sources") {
+        CardSegmentContainer(isFirst = false, isLast = true, horizontalPadding = 0.dp, modifier = Modifier.padding(bottom = 20.dp)) {
+            AppTextButton(stringResource(Res.string.retry_failed_sources), viewModel::retryFailedSources, Modifier.padding(horizontal = 8.dp))
         }
     }
 }
 
-private enum class UpdatesContent { Loading, PermissionRequired, Error, Empty, Cards }
-
-
 @Composable
 private fun UpdatesCardList(
     updates: List<MarketAppInfo>,
+    checkState: UpdatesUiState,
+    aggregate: Boolean,
     downloadStates: State<Map<String, DownloadState>>,
     listState: LazyListState,
     listPadding: PaddingValues,
     viewModel: UpdatesViewModel,
     onOpenDetail: (MarketAppInfo) -> Unit,
+    onChooseSource: ((MarketAppInfo) -> Unit)?,
     modifier: Modifier
 ) {
     val updateActionText = stringResource(Res.string.update)
@@ -186,6 +194,7 @@ private fun UpdatesCardList(
         verticalArrangement = Arrangement.spacedBy(0.dp),
         contentPadding = listPadding,
     ) {
+        updateCheckStatus(checkState, aggregate, viewModel)
         item(key = "summary") {
             Card(
                 modifier = Modifier
@@ -245,48 +254,9 @@ private fun UpdatesCardList(
                     onIgnoreOnce = { viewModel.ignoreOnce(app) },
                     onIgnorePermanent = { viewModel.ignorePermanently(app) },
                     actionText = updateActionText,
+                    onChooseSource = onChooseSource?.let { { it(app) } },
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun UpdatesHeader(onBack: () -> Unit) {
-    val layoutDirection = LocalLayoutDirection.current
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 12.dp, top = 12.dp, end = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.Start,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clickable(onClick = onBack),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = MiuixIcons.Back,
-                contentDescription = stringResource(Res.string.back),
-                tint = MiuixTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        scaleX = if (layoutDirection == LayoutDirection.Rtl) -1f else 1f
-                    },
-            )
-        }
-        Box(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(Res.string.updates_title),
-                color = MiuixTheme.colorScheme.onSurface,
-                style = MiuixTheme.textStyles.title1.copy(lineHeight = 40.sp),
-            )
         }
     }
 }
@@ -305,6 +275,7 @@ private fun UpdateItemRow(
     onCancel: (String) -> Unit,
     onIgnoreOnce: () -> Unit,
     onIgnorePermanent: () -> Unit,
+    onChooseSource: (() -> Unit)? = null,
 ) {
     var expanded by remember(app.packageName, app.versionCode) { mutableStateOf(false) }
     val changeLog = app.changeLog.ifBlank { stringResource(Res.string.no_change_log) }
@@ -328,6 +299,7 @@ private fun UpdateItemRow(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
+                modifier = Modifier.weight(1f).padding(end = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -336,7 +308,7 @@ private fun UpdateItemRow(
                     contentDescription = appDisplayName(app.displayName, app.source),
                     size = 48.dp,
                 )
-                Column(Modifier.width(195.dp)) {
+                Column(Modifier.weight(1f)) {
                     Text(
                         text = appDisplayName(app.displayName, app.source),
                         color = MiuixTheme.colorScheme.onSurface,
@@ -427,6 +399,9 @@ private fun UpdateItemRow(
                 }
             }
         }
+        if (onChooseSource != null) {
+            AppTextButton(stringResource(Res.string.update_versions_source, appSourceLabel(app.source)), onChooseSource)
+        }
         if (expanded) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -484,20 +459,6 @@ internal fun updateSizeText(app: MarketAppInfo) = buildAnnotatedString {
         fullSizeStart,
         length,
     )
-}
-
-@Composable
-private fun UpdatesHint(text: String, padding: PaddingValues) {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(padding),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            style = MiuixTheme.textStyles.main,
-        )
-    }
 }
 
 @Composable

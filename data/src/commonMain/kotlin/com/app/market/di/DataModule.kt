@@ -86,8 +86,14 @@ import com.app.market.data.remote.fdroid.IzzyApiConfig
 import com.app.market.data.remote.fdroid.TunaApiConfig
 import com.app.market.data.download.MeteredDownloadRepository
 import com.app.market.domain.repository.MeteredDownloadConfirmation
+import com.app.market.data.store.FeaturePreferencesRepositoryImpl
+import com.app.market.domain.repository.FeaturePreferencesRepository
+import com.app.market.domain.repository.DiscoveryRepository
+import com.app.market.data.repository.DiscoveryRepositoryImpl
 
 private val commonDataModule = module {
+    singleOf(::FeaturePreferencesRepositoryImpl) { bind<FeaturePreferencesRepository>() }
+    singleOf(::DiscoveryRepositoryImpl) { bind<DiscoveryRepository>() }
     single<CoroutineScope> {
         // 数据层后台协程的最后防线：存储/IO 异常记录日志而不是崩溃整个进程
         val handler = CoroutineExceptionHandler { _, error ->
@@ -159,7 +165,7 @@ private val commonDataModule = module {
     }
 
     singleOf(::RecordingDownloadRepositoryImpl)
-    single { MeteredDownloadRepository(get<RecordingDownloadRepositoryImpl>(), get()) }
+    single { MeteredDownloadRepository(get<RecordingDownloadRepositoryImpl>(), get(), get()) }
     single<DownloadRepository> { get<MeteredDownloadRepository>() }
     single<MeteredDownloadConfirmation> { get<MeteredDownloadRepository>() }
 }

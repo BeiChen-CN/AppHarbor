@@ -103,7 +103,20 @@ import com.app.market.domain.model.market.isDownloadBlocked
 import com.app.market.domain.model.market.isReservation
 import com.app.market.platform.ImageSaveResult
 import com.app.market.platform.UiPlatform
+import com.app.market.resources.comments_section
+import com.app.market.resources.comments_unsupported
 import com.app.market.resources.Res
+import com.app.market.resources.comment_source
+import com.app.market.resources.switch_comment_source
+import com.app.market.resources.comments_source_label
+import com.app.market.resources.comments_empty
+import com.app.market.resources.loading
+import com.app.market.resources.retry
+import com.app.market.domain.repository.CommentSources
+import com.app.market.domain.repository.effectiveCommentSource
+import com.app.market.ui.component.SourcePickerDialog
+import com.app.market.ui.component.AppTextButton
+import com.app.market.ui.util.appSourceLabel
 import com.app.market.resources.age_rating
 import com.app.market.resources.app_detail
 import com.app.market.resources.app_info
@@ -237,6 +250,9 @@ fun AppDetailScreen(
     val showComments by viewModel.showComments.collectAsStateWithLifecycle()
     val showSameDeveloper by viewModel.showSameDeveloper.collectAsStateWithLifecycle()
     val showPromotions by viewModel.showPromotions.collectAsStateWithLifecycle()
+    val featureSettings by viewModel.featureSettings.collectAsStateWithLifecycle()
+    var commentPicker by remember { mutableStateOf(false) }
+    val resolvedCommentSource = effectiveCommentSource(featureSettings.commentSource, source)
 
     val installText = installActionText()
     val updateText = stringResource(Res.string.update)
@@ -330,6 +346,13 @@ fun AppDetailScreen(
             CollapsibleMarketScaffold(
                 title = collapsedTitle,
                 onBack = onBack,
+                persistentActions = {
+                    AppTextButton(
+                        text = stringResource(Res.string.switch_comment_source),
+                        onClick = { commentPicker = true },
+                        minHeight = 32.dp,
+                    )
+                },
                 actions = {
                     if (current != null && actionKind != null) {
                         DetailActionButton(
@@ -447,6 +470,10 @@ fun AppDetailScreen(
                                 current = detail,
                                 downloadStates = downloadStates,
                                 showComments = showComments,
+                                commentsLoading = state.commentsLoading,
+                                comments = state.comments,
+                                commentsError = state.commentsError,
+                                commentSource = resolvedCommentSource,
                                 showSameDeveloper = showSameDeveloper,
                                 showPromotions = showPromotions,
                                 contentPadding = contentPadding,
@@ -493,6 +520,8 @@ fun AppDetailScreen(
             }
         }
     }
+    SourcePickerDialog(commentPicker, stringResource(Res.string.comment_source), listOf(null) + CommentSources,
+        featureSettings.commentSource, viewModel::setCommentSource, { commentPicker = false })
 }
 
 private enum class DetailPhase { Loading, Error, Content }
@@ -502,6 +531,10 @@ private fun AppDetailContent(
     current: AppDetail,
     downloadStates: State<Map<String, DownloadState>>,
     showComments: Boolean,
+    commentsLoading: Boolean,
+    comments: com.app.market.domain.model.market.AppComments,
+    commentsError: String,
+    commentSource: AppSource,
     showSameDeveloper: Boolean,
     showPromotions: Boolean,
     contentPadding: PaddingValues,
@@ -527,12 +560,13 @@ private fun AppDetailContent(
     val historicalVersionsLabel = stringResource(Res.string.historical_versions)
     val historicalVersionsSummary = stringResource(Res.string.historical_versions_summary)
 
-    val commentCount = maxOf(current.commentCount, current.comments.size.toLong())
+    val commentCount = maxOf(comments.totalCount, comments.items.size.toLong())
+    val storeReviewsLabel = stringResource(Res.string.num_comments, formatCount(current.commentCount).ifBlank { "0" })
     val commentsLabel = stringResource(
         Res.string.num_comments,
         formatCount(commentCount).ifBlank { "0" }
     )
-    val commentsTitle = stringResource(Res.string.comments_and_scores)
+    val commentsTitle = stringResource(Res.string.comments_section)
 
     val sameDeveloperTitle = stringResource(Res.string.same_developer)
     val ageLabel = stringResource(Res.string.age_rating)
@@ -565,7 +599,7 @@ private fun AppDetailContent(
         item(key = "stats") {
             AppDetailStatsRow(
                 rating = formatRating(current.app.ratingScore),
-                reviews = commentsLabel,
+                reviews = storeReviewsLabel,
                 downloads = current.downloadCount
                     .takeUnless { current.app.source == AppSource.SAMSUNG }
                     ?.let { formatCount(it).ifBlank { "0" } },
@@ -574,7 +608,7 @@ private fun AppDetailContent(
                 appSizeLabel = appSizeLabel,
                 ageClassification = current.ageClassification,
                 ageLabel = ageLabel,
-                onReviewsClick = if (current.comments.isNotEmpty()) {
+                onReviewsClick = if (showComments && commentSource == current.app.source && comments.items.isNotEmpty()) {
                     { showCommentsSheet = true }
                 } else {
                     null
@@ -657,9 +691,24 @@ private fun AppDetailContent(
             }
         }
 
-        if (showComments && current.comments.isNotEmpty()) {
+        if (showComments && comments.items.isEmpty()) {
+            item(key = "comments-status") {
+                DetailSection(title = commentsTitle) {
+                    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), insideMargin = PaddingValues(16.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(Res.string.comments_source_label, appSourceLabel(commentSource)))
+                            Text(if (commentsLoading) stringResource(Res.string.loading)
+                                else if (!commentSource.capabilities.supportsComments) stringResource(Res.string.comments_unsupported)
+                                else commentsError.ifBlank { stringResource(Res.string.comments_empty) })
+                            if (commentsError.isNotBlank()) AppTextButton(stringResource(Res.string.retry), viewModel::reloadComments)
+                        }
+                    }
+                }
+            }
+        }
+        if (showComments && comments.items.isNotEmpty()) {
             item(key = "comments") {
-                val displayedComments = current.comments.take(2)
+                val displayedComments = comments.items.take(2)
                 DetailSection(
                     title = commentsTitle,
                 ) {
@@ -673,9 +722,9 @@ private fun AppDetailContent(
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Column {
                                 Text(
-                                    text = formatRating(current.app.ratingScore),
+                                    text = stringResource(Res.string.comments_source_label, appSourceLabel(commentSource)),
                                     color = MiuixTheme.colorScheme.onSurface,
-                                    style = MiuixTheme.textStyles.title1.copy(lineHeight = 40.sp),
+                                    style = MiuixTheme.textStyles.body1,
                                 )
                                 Text(
                                     text = commentsLabel,
@@ -688,7 +737,7 @@ private fun AppDetailContent(
                                     CommentContent(comment)
                                 }
                             }
-                            if (current.comments.size > 2) {
+                            if (comments.items.size > 2) {
                                 Text(
                                     text = viewMoreText,
                                     color = MiuixTheme.colorScheme.primary,
@@ -761,9 +810,9 @@ private fun AppDetailContent(
             item(key = "comments-summary") {
                 Column {
                     Text(
-                        text = formatRating(current.app.ratingScore),
+                        text = stringResource(Res.string.comments_source_label, appSourceLabel(commentSource)),
                         color = MiuixTheme.colorScheme.onSurface,
-                        style = MiuixTheme.textStyles.title1.copy(lineHeight = 40.sp),
+                        style = MiuixTheme.textStyles.body1,
                     )
                     Text(
                         text = commentsLabel,
@@ -773,7 +822,7 @@ private fun AppDetailContent(
                 }
             }
             itemsIndexed(
-                items = current.comments,
+                items = comments.items,
                 key = { index, comment -> "${index}_${comment.userName}" },
             ) { _, comment ->
                 CommentContent(comment)

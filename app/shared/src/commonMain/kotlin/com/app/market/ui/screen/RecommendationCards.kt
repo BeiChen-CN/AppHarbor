@@ -1,16 +1,11 @@
 package com.app.market.ui.screen
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,238 +21,51 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.app.market.domain.model.market.MarketAppInfo
-import com.app.market.domain.model.today.TodayArticle
 import com.app.market.domain.model.today.TodayFeaturedItem
 import com.app.market.resources.Res
 import com.app.market.resources.golden_award
-import com.app.market.resources.nav_today
 import com.app.market.resources.num_updates_pending
 import com.app.market.resources.view
 import com.app.market.ui.component.AppAsyncImage
 import com.app.market.ui.component.AppButton
 import com.app.market.ui.component.AppIcon
-import com.app.market.ui.component.HidingMainTabScaffold
-import com.app.market.ui.component.LoadingBox
-import com.app.market.ui.component.PageVerticalPadding
-import com.app.market.ui.theme.LocalEnableFloatingBottomBar
 import com.app.market.ui.util.appDisplayName
 import com.app.market.ui.util.todayAwardLabel
 import com.app.market.ui.util.todayAppSummary
-import com.app.market.viewmodel.TodayViewModel
-import com.app.market.viewmodel.UpdatesViewModel
-import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import kotlin.math.ceil
 
 private val PaperCardRadius = 16.dp
-private val TodayGridMinCellWidth = 320.dp
 
 @Composable
-fun TodayTab(
-    viewModel: TodayViewModel,
-    bottomPadding: Dp,
-    onClickArticle: (TodayArticle) -> Unit,
-    updatesViewModel: UpdatesViewModel? = null,
-    onClickViewUpdates: () -> Unit = {},
-) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val updateState = updatesViewModel?.uiState?.collectAsStateWithLifecycle()?.value
-    val listState = rememberLazyGridState()
-    val currentState by rememberUpdatedState(state)
-    val pendingUpdates =
-        if (updateState != null && !updateState.loading) updateState.updates else emptyList()
-    val showUpdatesCard = pendingUpdates.isNotEmpty()
-    val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
-
-    LaunchedEffect(showUpdatesCard) {
-        if (listState.firstVisibleItemIndex <= 1 && listState.firstVisibleItemScrollOffset == 0) {
-            listState.requestScrollToItem(0)
-        }
-    }
-
-    LaunchedEffect(listState, viewModel) {
-        snapshotFlow {
-            val layoutInfo = listState.layoutInfo
-            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            val nearEnd = lastVisible >= 0 &&
-                    layoutInfo.totalItemsCount > 0 &&
-                    lastVisible >= layoutInfo.totalItemsCount - 3
-            nearEnd &&
-                    !currentState.feedLoading &&
-                    !currentState.feedLoadingMore &&
-                    currentState.feed.hasMore &&
-                    currentState.feedError.isBlank()
-        }
-            .distinctUntilChanged()
-            .collect { shouldLoadMore -> if (shouldLoadMore) viewModel.loadMore() }
-    }
-
-    HidingMainTabScaffold(
-        title = stringResource(Res.string.nav_today),
-        bottomTransitionHeight = if (enableFloatingBottomBar) {
-            bottomPadding + PageVerticalPadding
-        } else {
-            0.dp
-        },
-    ) { topPadding, backdropModifier, scrollBehavior ->
-        val initialLoading = state.feedLoading && state.feed.items.isEmpty()
-        Crossfade(
-            targetState = initialLoading,
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MiuixTheme.colorScheme.surface)
-                .then(backdropModifier),
-            label = "today",
-        ) { loading ->
-            if (loading) {
-                LoadingBox(
-                    Modifier.fillMaxSize().padding(
-                        top = topPadding + PageVerticalPadding,
-                        bottom = bottomPadding + PageVerticalPadding,
-                    ),
-                )
-                return@Crossfade
-            }
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(TodayGridMinCellWidth),
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .scrollEndHaptic()
-                    .overScrollVertical()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 12.dp,
-                    end = 12.dp,
-                    top = topPadding + PageVerticalPadding,
-                    bottom = bottomPadding + PageVerticalPadding,
-                ),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                if (showUpdatesCard) {
-                    item(
-                        key = "updates",
-                        span = { GridItemSpan(maxLineSpan) },
-                    ) {
-                        var pendingCardVisible by remember { mutableStateOf(false) }
-                        LaunchedEffect(Unit) { pendingCardVisible = true }
-                        AnimatedVisibility(
-                            visible = pendingCardVisible,
-                            enter = fadeIn(tween(220)) +
-                                    expandVertically(tween(300), expandFrom = Alignment.Top),
-                        ) {
-                            PendingUpdatesCard(
-                                updates = pendingUpdates,
-                                onClick = onClickViewUpdates,
-                                modifier = Modifier.padding(bottom = 20.dp),
-                            )
-                        }
-                    }
-                }
-                items(state.feed.items, key = { "feed-${it.rId.ifBlank { it.articleLink }}" }) { item ->
-                    FeaturedArticleCard(
-                        item = item,
-                        fullCoverOverlay = state.source.capabilities.todayFullCoverOverlay,
-                        modifier = Modifier
-                            .animateItem(placementSpec = null)
-                            .padding(bottom = 20.dp),
-                    ) {
-                        openArticle(item, onClickArticle)
-                    }
-                }
-                if (state.feedLoading || state.feedLoadingMore) {
-                    item(
-                        key = "feed-loading",
-                        span = { GridItemSpan(maxLineSpan) },
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            InfiniteProgressIndicator(size = 24.dp)
-                        }
-                    }
-                }
-                if (state.feedError.isNotBlank()) {
-                    item(
-                        key = "feed-error",
-                        span = { GridItemSpan(maxLineSpan) },
-                    ) {
-                        Text(
-                            text = state.feedError,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(onClick = viewModel::retryFeed)
-                                .padding(16.dp),
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            style = MiuixTheme.textStyles.body2.copy(lineHeight = 18.sp),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun openArticle(item: TodayFeaturedItem, onClickArticle: (TodayArticle) -> Unit) {
-    val articleId = item.rId.ifBlank { return }
-    onClickArticle(
-        TodayArticle(
-            rId = articleId,
-            title = item.title,
-            awardName = item.awardName,
-            headerImage = item.coverImage,
-            richTextHtml = item.summary,
-            app = item.app ?: item.apps.singleOrNull(),
-            apps = item.apps,
-            showTitleLabel = item.showTitleLabel,
-            showCoverText = item.showCoverText,
-        ),
-    )
-}
-
-@Composable
-private fun PendingUpdatesCard(
+internal fun PendingUpdatesCard(
     updates: List<MarketAppInfo>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -466,13 +274,13 @@ internal fun AdaptiveAppIconRow(
 }
 
 @Composable
-private fun FeaturedArticleCard(
+internal fun FeaturedArticleCard(
     item: TodayFeaturedItem,
     modifier: Modifier = Modifier,
     fullCoverOverlay: Boolean = false,
     onClick: () -> Unit,
 ) {
-    val fallbackColor = MiuixTheme.colorScheme.primary
+    val fallbackColor = readableCoverColor(MiuixTheme.colorScheme.primary)
     var gradientColor by remember(item.coverImage, fallbackColor) { mutableStateOf(fallbackColor) }
     var coverRatio by remember(item.coverImage) { mutableStateOf<Float?>(null) }
     val app = item.app ?: item.apps.singleOrNull()
@@ -493,7 +301,7 @@ private fun FeaturedArticleCard(
         insideMargin = PaddingValues(0.dp),
         colors = CardDefaults.defaultColors(
             color = gradientColor,
-            contentColor = MiuixTheme.colorScheme.onPrimary,
+            contentColor = Color.White,
         ),
         onClick = onClick,
     ) {
@@ -503,7 +311,7 @@ private fun FeaturedArticleCard(
                 FeaturedCoverImage(
                     item = item,
                     modifier = Modifier.fillMaxSize(),
-                    onGradientColor = { gradientColor = it },
+                    onGradientColor = { gradientColor = readableCoverColor(it) },
                     onCoverSize = { width, height -> coverRatio = width.toFloat() / height },
                 )
                 if (item.showCoverText) {
@@ -523,7 +331,7 @@ private fun FeaturedArticleCard(
                         FeaturedCoverImage(
                             item = item,
                             modifier = Modifier.fillMaxSize(),
-                            onGradientColor = { gradientColor = it },
+                            onGradientColor = { gradientColor = readableCoverColor(it) },
                             onCoverSize = { width, height -> coverRatio = width.toFloat() / height },
                         )
                         if (item.showCoverText) {
@@ -566,7 +374,7 @@ private fun FeaturedCoverImage(
         },
         showLoadingIndicator = true,
         loadingIndicatorAlignment = BiasAlignment(0f, -0.25f),
-        loadingIndicatorColor = MiuixTheme.colorScheme.onPrimary,
+        loadingIndicatorColor = Color.White,
     )
 }
 
@@ -614,7 +422,7 @@ private fun AppFeatureContent(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(appBarColor ?: MiuixTheme.colorScheme.onBackground.copy(alpha = 0.10f))
+            .background(appBarColor ?: Color.Black.copy(alpha = 0.12f))
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -627,12 +435,12 @@ private fun AppFeatureContent(
         Column(Modifier.weight(1f)) {
             Text(
                 text = appDisplayName(app.displayName, app.source),
-                color = MiuixTheme.colorScheme.onPrimary,
+                color = Color.White,
                 style = MiuixTheme.textStyles.headline1.copy(
                     fontWeight = FontWeight.Medium,
                     lineHeight = 22.sp,
                 ),
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             FeatureSummary(app.todayAppSummary())
@@ -644,7 +452,7 @@ private fun AppFeatureContent(
 private fun FeatureLabel(text: String) {
     Text(
         text = text,
-        color = MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
+        color = Color.White.copy(alpha = 0.85f),
         style = MiuixTheme.textStyles.body2.copy(lineHeight = 16.sp),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -658,9 +466,9 @@ private fun FeatureLabel(text: String) {
 private fun FeatureTitle(text: String) {
     Text(
         text = text,
-        color = MiuixTheme.colorScheme.onPrimary,
+        color = Color.White,
         style = MiuixTheme.textStyles.title3.copy(lineHeight = 24.sp),
-        maxLines = 1,
+        maxLines = 2,
         overflow = TextOverflow.Ellipsis,
     )
 }
@@ -669,7 +477,7 @@ private fun FeatureTitle(text: String) {
 private fun FeatureSummary(text: String) {
     Text(
         text = text,
-        color = MiuixTheme.colorScheme.onPrimary.copy(alpha = 0.4f),
+        color = Color.White.copy(alpha = 0.85f),
         style = MiuixTheme.textStyles.body2.copy(lineHeight = 18.sp),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -677,4 +485,17 @@ private fun FeatureSummary(text: String) {
             blendMode = BlendMode.Plus
         }
     )
+}
+
+/** 将封面取色压到白字可读的亮度，避免亮封面和深色主题下文字失去对比。 */
+internal fun readableCoverColor(color: Color): Color {
+    val opaque = color.copy(alpha = 1f)
+    if (opaque.luminance() <= 0.12f) return opaque
+    var low = 0f
+    var high = 1f
+    repeat(12) {
+        val middle = (low + high) / 2
+        if (lerp(opaque, Color.Black, middle).luminance() > 0.12f) low = middle else high = middle
+    }
+    return lerp(opaque, Color.Black, high)
 }

@@ -2,6 +2,7 @@ package com.app.market.data.repository
 
 import android.content.pm.PackageInstaller
 import com.app.market.data.download.PlatformDownloadDataSource
+import com.app.market.data.download.NetworkMetering
 import com.app.market.data.install.DeltaFallbackBus
 import com.app.market.data.install.RemotePackageDownloader
 import com.app.market.data.install.platform.InstallResultHandler
@@ -32,6 +33,7 @@ import com.app.market.domain.model.installer.InstallerMode
 import com.app.market.domain.repository.InstallRepository
 import com.app.market.domain.repository.InstallerPreferencesRepository
 import com.app.market.domain.repository.PackageRepository
+import com.app.market.domain.repository.FeaturePreferencesRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +48,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -68,6 +74,8 @@ internal class AndroidDownloadDataSource(
     private val packageChanges: PackageChangeHandler,
     private val deltaFallbackBus: DeltaFallbackBus,
     private val scope: CoroutineScope,
+    private val features: FeaturePreferencesRepository,
+    private val network: NetworkMetering,
 ) : PlatformDownloadDataSource, InstallTaskProcessor, InstallResultHandler, SavedPackageInstallLauncher {
     private val mutableStates = MutableStateFlow<Map<String, DownloadState>>(emptyMap())
     override val states: StateFlow<Map<String, DownloadState>> = mutableStates.asStateFlow()
@@ -87,6 +95,18 @@ internal class AndroidDownloadDataSource(
     private val downloadSlots = Semaphore(MAX_CONCURRENT_DOWNLOADS)
 
     init {
+        scope.launch {
+            combine(features.settings.map { it.onlyUnmeteredDownloads }.distinctUntilChanged(), network.changes) { restricted, metered ->
+                restricted && metered
+            }.distinctUntilChanged().collect { blocked ->
+                if (blocked) {
+                    restored.await()
+                    tasks.all().filter { it.phase in setOf(DownloadPhase.QUEUED, DownloadPhase.DOWNLOADING) &&
+                        it.request.artifacts.any { artifact -> artifact.source !is InstallSource.Local } }
+                        .forEach { pauseTask(it.id, forNetwork = true) }
+                }
+            }
+        }
         scope.launch {
             try {
                 restoreTasks()
@@ -250,6 +270,7 @@ internal class AndroidDownloadDataSource(
             return
         }
         try {
+            features.initialized.first { it }
             // 「全部更新」会一次拉起几十个任务，不限并发会切碎带宽并塞满暂存区
             val needsSlot = record.request.artifacts.any { it.source !is InstallSource.Local }
             if (needsSlot) {
@@ -257,10 +278,16 @@ internal class AndroidDownloadDataSource(
                 downloadSlots.acquire()
             }
             try {
+                // 通知栏恢复、进程重启与排队等待结束都在此重新检查，不能绕过限制。
+                if (needsSlot && features.settings.value.onlyUnmeteredDownloads && network.isMetered()) {
+                    updateRecord(taskId) { it.copy(phase = DownloadPhase.PAUSED, waitingForUnmetered = true) }
+                    return
+                }
                 updateRecord(taskId) {
                     it.copy(
                         phase = DownloadPhase.DOWNLOADING,
                         errorMessage = "",
+                        waitingForUnmetered = false,
                     )
                 }
                 val events = if (record.installAfterDownload) {
@@ -569,7 +596,12 @@ internal class AndroidDownloadDataSource(
         launchTask(record, propagateLaunchFailure)
     }
 
-    private suspend fun pauseTask(taskId: String) {
+    private suspend fun pauseTask(taskId: String, forNetwork: Boolean = false) {
+        if (forNetwork) {
+            val record = tasks.get(taskId) ?: return
+            if (record.phase !in setOf(DownloadPhase.QUEUED, DownloadPhase.DOWNLOADING)) return
+            updateRecord(taskId) { it.copy(waitingForUnmetered = true) }
+        }
         activeJobs[taskId]?.cancel()
         installer.cancel(taskId)
         updateRecord(taskId) { record ->
@@ -580,7 +612,7 @@ internal class AndroidDownloadDataSource(
                     errorMessage = "",
                 )
             } else {
-                record.copy(phase = DownloadPhase.PAUSED)
+                record.copy(phase = DownloadPhase.PAUSED, waitingForUnmetered = forNetwork)
             }
         }
     }
@@ -709,6 +741,7 @@ internal class AndroidDownloadDataSource(
         versionName = request.versionName,
         versionCode = request.versionCode,
         source = request.marketSource,
+        waitingForUnmetered = waitingForUnmetered,
     )
 
     private fun DownloadMeta.toInstallRequest(

@@ -15,8 +15,10 @@ import com.app.market.viewmodel.UpdateHistoryViewModel
 import com.app.market.viewmodel.UpdatesViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import com.app.market.viewmodel.DiscoveryViewModel
 
 val viewModelModule = module {
+    viewModelOf(::DiscoveryViewModel)
     viewModelOf(::UpdatesViewModel)
     viewModelOf(::ThemeSettingsViewModel)
     viewModelOf(::UpdateHistoryViewModel)
