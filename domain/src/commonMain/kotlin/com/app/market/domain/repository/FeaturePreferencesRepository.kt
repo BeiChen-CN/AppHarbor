@@ -9,6 +9,7 @@ data class FeaturePreferences(
     val aggregateUpdates: Boolean = false,
     val commentSource: AppSource? = null,
     val recommendationSource: AppSource = AppSource.XIAOMI,
+    val showRecommendationUpdates: Boolean = true,
     val includePrereleaseUpdates: Boolean = false,
     val aggregateSources: Set<AppSource> = UpdateSources.toSet(),
     val preferredUpdateSources: Map<String, AppSource> = emptyMap(),
@@ -18,7 +19,7 @@ data class FeaturePreferences(
 val FeaturePreferences.updateSelectionPolicy: UpdateSelectionPolicy
     get() = UpdateSelectionPolicy(includePrereleaseUpdates, preferredUpdateSources)
 
-val CommentSources = listOf(AppSource.XIAOMI, AppSource.KUAIBAO)
+val CommentSources = listOf(AppSource.XIAOMI, AppSource.KUAIBAO, AppSource.TAPTAP, AppSource.TENCENT, AppSource.APPCHINA)
 val RecommendationSources = listOf(AppSource.XIAOMI, AppSource.VIVO, AppSource.OPPO, AppSource.TAPTAP, AppSource.KUAIBAO)
 
 fun effectiveCommentSource(preferred: AppSource?, app: AppSource): AppSource =
@@ -30,6 +31,7 @@ interface FeaturePreferencesRepository {
     suspend fun setAggregateUpdates(value: Boolean)
     suspend fun setCommentSource(value: AppSource?)
     suspend fun setRecommendationSource(value: AppSource)
+    suspend fun setShowRecommendationUpdates(value: Boolean)
     suspend fun setIncludePrereleaseUpdates(value: Boolean)
     suspend fun setAggregateSources(value: Set<AppSource>)
     suspend fun setPreferredUpdateSource(packageName: String, source: AppSource?)

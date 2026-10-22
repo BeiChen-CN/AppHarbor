@@ -43,7 +43,14 @@ internal class FeaturePreferencesRepositoryImpl(
                         val source = AppSource.fromToken(parts.getOrNull(1))?.takeIf { it in UpdateSources }
                         if (parts.first().isNotBlank() && source != null) parts.first() to source else null
                     }.toMap())
-            }.combine(preferences.observe(Unmetered)) { settings, unmetered -> settings.copy(onlyUnmeteredDownloads = unmetered) }
+            }.combine(combine(preferences.observe(Unmetered), preferences.observe(RecommendationUpdates)) { unmetered, recommendationUpdates ->
+                unmetered to recommendationUpdates
+            }) { settings, flags ->
+                settings.copy(
+                    onlyUnmeteredDownloads = flags.first,
+                    showRecommendationUpdates = flags.second,
+                )
+            }
                 .collect { mutableSettings.value = it; mutableInitialized.value = true }
         }
     }
@@ -60,6 +67,7 @@ internal class FeaturePreferencesRepositoryImpl(
 
     override suspend fun setIncludePrereleaseUpdates(value: Boolean) = preferences.put(Prereleases, value)
     override suspend fun setOnlyUnmeteredDownloads(value: Boolean) = preferences.put(Unmetered, value)
+    override suspend fun setShowRecommendationUpdates(value: Boolean) = preferences.put(RecommendationUpdates, value)
 
     override suspend fun setAggregateSources(value: Set<AppSource>) {
         require(value.isNotEmpty() && value.all { it in UpdateSources })
@@ -86,5 +94,6 @@ internal class FeaturePreferencesRepositoryImpl(
         val Sources = StringPreferenceKey("features", "aggregate_sources")
         val Pinned = StringPreferenceKey("features", "preferred_update_sources")
         val Unmetered = BooleanPreferenceKey("features", "only_unmetered_downloads")
+        val RecommendationUpdates = BooleanPreferenceKey("features", "recommendation_updates", default = true)
     }
 }

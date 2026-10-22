@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.app.market.domain.model.download.DownloadPhase
 import com.app.market.domain.model.download.DownloadState
 import com.app.market.resources.Res
+import com.app.market.resources.cancel
 import com.app.market.resources.waiting_unmetered
 import com.app.market.resources.download
 import com.app.market.resources.download_failed
@@ -38,6 +39,7 @@ import com.app.market.resources.installing_short
 import com.app.market.resources.waiting_install_confirmation
 import com.app.market.ui.component.AppActionButton
 import com.app.market.ui.component.AppIcon
+import com.app.market.ui.component.AppTextButton
 import com.app.market.ui.component.CardSegmentContainer
 import com.app.market.ui.component.MarketScaffold
 import com.app.market.ui.component.PageVerticalPadding
@@ -102,7 +104,8 @@ fun DownloadingAppsScreen(
                             onOpenDetail = { onOpenDetail(state) },
                             onResume = { viewModel.resume(state) },
                             onInstallDownloaded = viewModel::installDownloaded,
-                            onCancel = viewModel::pause,
+                            onPause = viewModel::pause,
+                            onCancel = viewModel::cancel,
                         )
                     }
                 }
@@ -118,6 +121,7 @@ private fun DownloadingAppRow(
     onOpenDetail: () -> Unit,
     onResume: () -> Unit,
     onInstallDownloaded: (String) -> Unit,
+    onPause: (String) -> Unit,
     onCancel: (String) -> Unit,
 ) {
     Row(
@@ -157,11 +161,19 @@ private fun DownloadingAppRow(
             onAction = onResume,
             onResumeDownload = onResume,
             onInstallDownloaded = onInstallDownloaded,
-            onCancel = onCancel,
+            onCancel = onPause,
             minHeight = 34.dp,
             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
             modifier = Modifier.width(70.dp),
         )
+        if (state.phase != DownloadPhase.INSTALLING && state.phase != DownloadPhase.AWAITING_USER_ACTION) {
+            AppTextButton(
+                text = stringResource(Res.string.cancel),
+                onClick = { onCancel(state.packageName) },
+                minHeight = 34.dp,
+                insideMargin = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            )
+        }
     }
 }
 

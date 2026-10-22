@@ -3,6 +3,8 @@ package com.app.market.data.remote.tencent
 import com.app.market.domain.exception.MarketException
 import com.app.market.domain.model.download.DownloadMeta
 import com.app.market.domain.model.download.DownloadPart
+import com.app.market.domain.model.market.AppComment
+import com.app.market.domain.model.market.AppComments
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.SearchPage
 import io.ktor.client.HttpClient
@@ -15,7 +17,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLPath
 import io.ktor.http.isSuccess
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -48,6 +53,15 @@ internal class TencentApi(private val client: HttpClient, private val config: Te
         return parseTencentDetail(response.bodyAsText(), packageName)
     }
 
+    suspend fun appComments(app: MarketAppInfo): AppComments {
+        val packageName = app.packageName.ifBlank { throw MarketException("应用宝缺少应用包名") }
+        val response = client.get(config.webBase.trimEnd('/') + "/appdetail/${packageName.encodeURLPath()}/review") {
+            header(HttpHeaders.UserAgent, UserAgent)
+        }
+        if (!response.status.isSuccess()) throw MarketException("应用宝评论请求失败 HTTP ${response.status.value}")
+        return parseTencentComments(response.bodyAsText())
+    }
+
     suspend fun downloadMeta(app: MarketAppInfo): DownloadMeta {
         val record = detail(app.packageName)
         val current = record.detail.app
@@ -65,3 +79,40 @@ internal class TencentApi(private val client: HttpClient, private val config: Te
         const val UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36"
     }
 }
+
+private val TencentJson = Json { ignoreUnknownKeys = true; isLenient = true }
+
+/** 应用宝评论页内嵌 schema.org Review 列表；总数取 Next 数据中的评论总数。 */
+internal fun parseTencentComments(html: String): AppComments {
+    val raw = TencentReviewJsonLdRegex.find(html)?.groupValues?.get(1)
+        ?: return AppComments(emptyList(), 0L)
+    val reviews = runCatching { TencentJson.decodeFromString<List<TencentReview>>(raw) }.getOrDefault(emptyList())
+    val items = reviews.mapNotNull { review ->
+        val content = review.reviewBody.replace("\r\n", "\n").trim()
+        if (content.isBlank()) return@mapNotNull null
+        AppComment(
+            userName = review.author.name.trim().ifBlank { "应用宝用户" },
+            content = content,
+            score = review.reviewRating.ratingValue.coerceIn(0.0, 5.0),
+        )
+    }
+    val total = TencentReviewTotalRegex.find(html)?.groupValues?.get(1)?.toLongOrNull()
+        ?.takeIf { it > 0L } ?: items.size.toLong()
+    return AppComments(items = items, totalCount = total)
+}
+
+@Serializable
+private data class TencentReview(
+    val author: TencentReviewAuthor = TencentReviewAuthor(),
+    val reviewRating: TencentReviewRating = TencentReviewRating(),
+    val reviewBody: String = "",
+)
+
+@Serializable
+private data class TencentReviewAuthor(val name: String = "")
+
+@Serializable
+private data class TencentReviewRating(val ratingValue: Double = 0.0)
+
+private val TencentReviewJsonLdRegex = Regex("""<script type="application/ld\+json"[^>]*>([\s\S]*?)</script>""")
+private val TencentReviewTotalRegex = Regex(""""total":(\d+),"recommend_topic_list"""")

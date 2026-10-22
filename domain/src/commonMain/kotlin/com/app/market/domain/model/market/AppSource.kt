@@ -99,7 +99,7 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
     TAPTAP(
         "taptap",
         SourceCapabilities(
-            supportsComments = false,
+            supportsComments = true,
             supportsSameDeveloperApps = false,
             prefersOpenLinkLaunch = false,
             reportsDeltaSize = false,
@@ -122,10 +122,24 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             supportsUpdates = false,
         ),
     ),
+    APPCHINA(
+        "appchina",
+        SourceCapabilities(
+            supportsComments = true,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            // 网页渠道无原生批量更新协议，更新下载与手动更新均回退小米
+            supportsUpdates = false,
+            supportsHistoricalVersions = true,
+        ),
+    ),
     TENCENT(
         "tencent",
         SourceCapabilities(
-            supportsComments = false,
+            supportsComments = true,
             supportsSameDeveloperApps = false,
             prefersOpenLinkLaunch = false,
             reportsDeltaSize = false,

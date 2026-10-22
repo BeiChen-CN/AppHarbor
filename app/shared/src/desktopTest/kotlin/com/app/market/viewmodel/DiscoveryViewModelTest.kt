@@ -116,6 +116,7 @@ internal class TestFeaturePreferences : FeaturePreferencesRepository {
     override suspend fun setAggregateUpdates(value: Boolean) { settings.update { it.copy(aggregateUpdates = value) } }
     override suspend fun setCommentSource(value: AppSource?) { settings.update { it.copy(commentSource = value) } }
     override suspend fun setRecommendationSource(value: AppSource) { settings.update { it.copy(recommendationSource = value) } }
+    override suspend fun setShowRecommendationUpdates(value: Boolean) { settings.update { it.copy(showRecommendationUpdates = value) } }
     override suspend fun setIncludePrereleaseUpdates(value: Boolean) { settings.update { it.copy(includePrereleaseUpdates = value) } }
     override suspend fun setAggregateSources(value: Set<AppSource>) { settings.update { it.copy(aggregateSources = value) } }
     override suspend fun setOnlyUnmeteredDownloads(value: Boolean) { settings.update { it.copy(onlyUnmeteredDownloads = value) } }

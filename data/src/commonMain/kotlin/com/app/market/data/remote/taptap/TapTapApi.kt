@@ -4,6 +4,8 @@ import com.app.market.data.remote.randomHex
 import com.app.market.data.remote.urlEncodeParameters
 import com.app.market.domain.exception.MarketException
 import com.app.market.domain.model.download.DownloadPatch
+import com.app.market.domain.model.market.AppComment
+import com.app.market.domain.model.market.AppComments
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -92,6 +94,7 @@ internal data class TapTapRecommendationPage(
 
 internal data class TapTapApiConfig(
     val baseUrl: String = "https://api.taptapdada.com",
+    val webBase: String = "https://www.taptap.cn",
 )
 
 private const val SearchPageSize = 10
@@ -99,6 +102,8 @@ private const val TapTapVersionName = "2.96.12-rel.100100"
 private const val TapTapVersionCode = "296121001"
 private const val TapTapUserAgent =
     "TapTap/2.96.12-rel#100100 (com.taptap; build:296121001; Android 16) Okhttp/3.12.1"
+private const val TapTapWebUserAgent =
+    "Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
 private const val ProtobufContentType =
     "application/x-protobuf; desc=\"https://pbdesc.xdrnd.cn/apis.desc\"; " +
             "messageType=\"apis.clientapi.search.AggSearchV6Request\"; charset=\"utf-8\""
@@ -114,6 +119,7 @@ internal class TapTapApi(
 ) {
     private val uid = randomUuid()
     private val launchSessionId = randomUuid()
+    private val webUid = randomUuid()
     private val searchSessions = mutableMapOf<String, String>()
     private var recommendationSessionId = ""
     private val xUa = buildString {
@@ -122,6 +128,31 @@ internal class TapTapApi(
         append("&LOC=CN&LANG=zh_CN&CH=organic-direct_index")
         append("&UID=").append(uid)
         append("&NT=1&SR=1080x2400&DEB=Android&DEM=AppMarket&OSV=16")
+    }
+    private val webXUa = "V=1&PN=WebM&LANG=zh_CN&VN_CODE=100000000&LOC=CN&PLT=Android" +
+        "&DS=Android&UID=$webUid&OS=Android&OSV=15"
+
+    suspend fun appComments(appId: Long): AppComments {
+        if (appId <= 0L) throw MarketException("TapTap 应用 id 无效")
+        val query = urlEncodeParameters(
+            linkedMapOf(
+                "app_id" to appId.toString(),
+                "filter_platform" to "",
+                "from" to "0",
+                "limit" to "10",
+                "mapping" to "",
+                "session_id" to randomUuid(),
+                "sort" to "hot",
+                "source_type" to "",
+                "stage_type" to "2",
+            ),
+        )
+        val response = client.get("${config.webBase}/webapiv2/review/v2/list-by-app?$query") {
+            header(HttpHeaders.UserAgent, TapTapWebUserAgent)
+            header("X-UA", webXUa)
+        }
+        val root = response.jsonObject("评论")
+        return parseTapTapComments(root)
     }
 
     suspend fun search(keyword: String, page: Int): Pair<List<TapTapSearchHit>, Boolean> {
@@ -389,6 +420,25 @@ internal fun parseTapTapRecommendations(root: JsonObject): TapTapRecommendationP
         items = items,
         nextPage = data?.string("next_page").orEmpty(),
     )
+}
+
+internal fun parseTapTapComments(root: JsonObject): AppComments {
+    val data = root.obj("data") ?: return AppComments(emptyList(), 0L)
+    val items = data.array("list").orEmpty().mapNotNull { value ->
+        val item = value as? JsonObject ?: return@mapNotNull null
+        val moment = item.obj("moment") ?: return@mapNotNull null
+        val review = moment.obj("review") ?: return@mapNotNull null
+        val content = plainText(review.obj("contents")?.string("text"))
+        if (content.isBlank()) return@mapNotNull null
+        AppComment(
+            userName = moment.obj("author")?.obj("user")?.string("name")
+                ?.takeIf(String::isNotBlank) ?: "TapTap 用户",
+            content = content,
+            score = review.double("score").coerceIn(0.0, 5.0),
+        )
+    }
+    val total = data.long("total").takeIf { it > 0L } ?: items.size.toLong()
+    return AppComments(items = items, totalCount = total)
 }
 
 private fun nextPageParameter(url: String, name: String): String = url

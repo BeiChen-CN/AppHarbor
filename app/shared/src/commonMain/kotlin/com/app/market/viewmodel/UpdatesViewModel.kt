@@ -168,6 +168,7 @@ class UpdatesViewModel(
     fun setUpdateSource(value: AppSource) = persist { prefs.setUpdateSource(value) }
     fun setIncludePrereleaseUpdates(value: Boolean) = persist { features.setIncludePrereleaseUpdates(value) }
     fun setOnlyUnmeteredDownloads(value: Boolean) = persist { features.setOnlyUnmeteredDownloads(value) }
+    fun setShowRecommendationUpdates(value: Boolean) = persist { features.setShowRecommendationUpdates(value) }
     fun setAggregateSources(value: Set<AppSource>) = persist { features.setAggregateSources(value) }
     fun setPreferredUpdateSource(packageName: String, source: AppSource?) = persist { features.setPreferredUpdateSource(packageName, source) }
     fun updateCandidates(packageName: String): List<MarketAppInfo> = eligibleUpdates(

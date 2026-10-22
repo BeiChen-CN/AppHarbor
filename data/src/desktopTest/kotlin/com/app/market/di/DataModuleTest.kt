@@ -1,6 +1,7 @@
 package com.app.market.di
 
 import com.app.market.domain.repository.AccountRepository
+import com.app.market.domain.repository.AppchinaRepository
 import com.app.market.domain.repository.TencentRepository
 import com.app.market.domain.repository.CoolapkRepository
 import com.app.market.domain.repository.DownloadRepository
@@ -32,6 +33,7 @@ class DataModuleTest {
         try {
             with(application.koin) {
                 assertNotNull(get<AccountRepository>())
+                assertNotNull(get<AppchinaRepository>())
                 assertNotNull(get<DownloadRepository>())
                 assertNotNull(get<InstalledApkHashRepository>())
                 assertNotNull(get<InstalledPackagesRepository>())

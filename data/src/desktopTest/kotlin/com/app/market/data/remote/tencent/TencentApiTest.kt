@@ -20,6 +20,22 @@ import kotlin.test.assertTrue
 
 class TencentApiTest {
     @Test
+    fun parsesEmbeddedReviewJsonLdAndTotal() {
+        val html = """
+            <script type="application/ld+json" data-next-head="">[
+              {"@type":"Review","author":{"@type":"Person","name":"五*钱"},"reviewRating":{"ratingValue":5},"reviewBody":"第一条评论"},
+              {"@type":"Review","author":{"@type":"Person","name":"夏*风"},"reviewRating":{"ratingValue":4},"reviewBody":"第二条评论"}
+            ]</script>
+            <script id="__NEXT_DATA__">{"total":15488,"recommend_topic_list":[]}</script>
+        """.trimIndent()
+        val comments = parseTencentComments(html)
+        assertEquals(2, comments.items.size)
+        assertEquals(15488L, comments.totalCount)
+        assertEquals("五*钱", comments.items.first().userName)
+        assertEquals(5.0, comments.items.first().score)
+        assertEquals("第二条评论", comments.items.last().content)
+    }
+    @Test
     fun searchEncodesKeywordAndRefreshesInstalledResultsBeforeShowingUpdateAction() = runBlocking {
         val client = HttpClient(MockEngine { request ->
             if (request.url.encodedPath == "/search") {

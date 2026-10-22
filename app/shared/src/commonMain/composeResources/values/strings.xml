@@ -285,6 +285,7 @@
     <string name="image_save_failed">Could not save the image</string>
     <string name="image_save_unsupported">Saving images is only available on Android</string>
     <string name="source_tencent">Tencent App Store</string>
+    <string name="source_appchina">AppChina</string>
     <string name="installer_delete_after_update">Delete packages after updates</string>
     <string name="installer_delete_after_update_summary">Delete this task’s installation packages, including copies in Download, only after a successful app update.</string>
     <string name="nav_games">Games</string>
@@ -299,6 +300,8 @@
     <string name="all_game_sources">TapTap + Kuaibao</string>
     <string name="recommendation_source">Recommendation source</string>
     <string name="recommendation_source_summary">Used for recommendation content</string>
+    <string name="recommendation_updates">Update prompt</string>
+    <string name="recommendation_updates_summary">Show apps with pending updates on the recommendations page</string>
     <string name="switch_comment_source">Comments source</string>
     <string name="no_content">No content available</string>
     <string name="comments_empty">No comments available from this source</string>

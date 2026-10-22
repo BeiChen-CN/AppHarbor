@@ -42,6 +42,11 @@ class TencentLiveTest {
             assertTrue(response.status.isSuccess(), "CDN status: ${response.status}")
             assertTrue(response.headers[HttpHeaders.ContentType].orEmpty().contains("android.package-archive"))
             assertEquals(meta.size, response.headers[HttpHeaders.ContentLength]?.toLongOrNull())
+
+            val comments = source.appComments(AppSource.TENCENT, detail.app)
+            assertTrue(comments.items.isNotEmpty())
+            assertTrue(comments.totalCount > 0L)
+            println("tencent comments: ${comments.items.size}, total ${comments.totalCount}")
         } finally {
             graph.koin.get<CoroutineScope>().cancel()
             graph.close()

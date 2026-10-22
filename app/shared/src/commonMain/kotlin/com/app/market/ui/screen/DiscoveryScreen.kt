@@ -6,10 +6,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveable
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -39,8 +41,9 @@ fun DiscoveryTab(
     onViewUpdates: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val featureSettings by viewModel.featureSettings.collectAsStateWithLifecycle()
     val updates = updatesViewModel?.uiState?.collectAsStateWithLifecycle()?.value
-    val pendingUpdates = if (updates != null && !updates.loading) updates.updates else emptyList()
+    val pendingUpdates = if (featureSettings.showRecommendationUpdates && updates != null && !updates.loading) updates.updates else emptyList()
     val packages = koinInject<PackageRepository>()
     val floatingBar = LocalEnableFloatingBottomBar.current
     var picker by remember { mutableStateOf(false) }
@@ -65,8 +68,23 @@ fun DiscoveryTab(
             title = stringResource(Res.string.nav_recommendations),
             bottomTransitionHeight = if (floatingBar) bottomPadding + PageVerticalPadding else 0.dp,
             actions = {
-                AppTextButton(stringResource(Res.string.feed_refresh), viewModel::refresh, enabled = !state.refreshing)
-                AppTextButton(stringResource(Res.string.switch_search_source), { picker = true }, Modifier.padding(end = 12.dp))
+                // 顶栏动作只保留文字，避免 AppTextButton 的浅色胶囊底在折叠/滚动时露出白条。
+                val transparentAction = ButtonDefaults.textButtonColors(
+                    color = Color.Transparent,
+                    disabledColor = Color.Transparent,
+                )
+                AppTextButton(
+                    stringResource(Res.string.feed_refresh),
+                    viewModel::refresh,
+                    enabled = !state.refreshing,
+                    colors = transparentAction,
+                )
+                AppTextButton(
+                    stringResource(Res.string.switch_search_source),
+                    { picker = true },
+                    Modifier.padding(end = 12.dp),
+                    colors = transparentAction,
+                )
             },
         ) { topPadding, backdrop, scroll ->
             PullToRefresh(isRefreshing = state.refreshing, onRefresh = viewModel::refresh,

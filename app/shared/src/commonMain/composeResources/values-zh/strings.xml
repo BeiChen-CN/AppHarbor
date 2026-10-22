@@ -286,6 +286,7 @@
     <string name="image_save_failed">保存图片失败</string>
     <string name="image_save_unsupported">保存图片仅在 Android 上可用</string>
     <string name="source_tencent">应用宝</string>
+    <string name="source_appchina">应用汇</string>
     <string name="installer_delete_after_update">更新后自动删除安装包</string>
     <string name="installer_delete_after_update_summary">仅在应用成功更新后删除本次任务的安装包（包括 Download 中的副本）。</string>
     <string name="nav_games">游戏</string>
@@ -300,6 +301,8 @@
     <string name="all_game_sources">TapTap + 好游快爆</string>
     <string name="recommendation_source">推荐来源</string>
     <string name="recommendation_source_summary">用于推荐页的内容</string>
+    <string name="recommendation_updates">更新提示</string>
+    <string name="recommendation_updates_summary">在推荐页显示有可用更新的应用</string>
     <string name="switch_comment_source">评论换源</string>
     <string name="no_content">暂无内容</string>
     <string name="comments_empty">此来源暂无评论</string>

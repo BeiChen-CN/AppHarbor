@@ -27,6 +27,7 @@ class DiscoveryViewModel(
     private val repository: DiscoveryRepository,
     private val preferences: FeaturePreferencesRepository,
 ) : ViewModel() {
+    val featureSettings = preferences.settings
     private val mutableState = MutableStateFlow(DiscoveryUiState(preferences.settings.value.recommendationSource))
     val uiState = mutableState.asStateFlow()
     private var nextPage = 0

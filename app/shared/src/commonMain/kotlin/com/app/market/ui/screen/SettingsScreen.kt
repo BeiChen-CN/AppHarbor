@@ -79,6 +79,12 @@ fun SettingsTab(
                         selectedIndex = RecommendationSources.indexOf(features.recommendationSource),
                         onSelectedIndexChange = { updatesViewModel.setRecommendationSource(RecommendationSources[it]) })
                 })
+                add(SettingsRow("recommendation-updates") {
+                    SwitchPreference(title = stringResource(Res.string.recommendation_updates),
+                        summary = stringResource(Res.string.recommendation_updates_summary),
+                        checked = features.showRecommendationUpdates,
+                        onCheckedChange = updatesViewModel::setShowRecommendationUpdates)
+                })
                 add(SettingsRow("search") {
                     WindowDropdownPreference(title = stringResource(Res.string.search_sources),
                         summary = stringResource(Res.string.search_sources_summary), items = AppSource.entries.map { appSourceLabel(it) },

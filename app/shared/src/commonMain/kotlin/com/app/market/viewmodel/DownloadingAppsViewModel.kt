@@ -49,6 +49,9 @@ class DownloadingAppsViewModel(
     fun installDownloaded(packageName: String) = downloads.install(packageName)
     fun pause(packageName: String) = downloads.cancel(packageName)
 
+    /** 取消会结束任务并清理暂存文件，与仅暂停的 [pause] 不同。 */
+    fun cancel(packageName: String) = downloads.clear(packageName)
+
     private fun DownloadState.toAppInfo(source: AppSource) = MarketAppInfo(
         appId = appId,
         packageName = packageName,

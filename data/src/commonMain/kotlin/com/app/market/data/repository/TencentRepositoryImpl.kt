@@ -4,6 +4,7 @@ import com.app.market.data.remote.tencent.TencentApi
 import com.app.market.domain.exception.AppNotListedException
 import com.app.market.domain.model.download.DownloadMeta
 import com.app.market.domain.model.installed.InstalledPackage
+import com.app.market.domain.model.market.AppComments
 import com.app.market.domain.model.market.AppDetail
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.SearchPage
@@ -35,6 +36,7 @@ internal class TencentRepositoryImpl(private val api: TencentApi, private val in
         result.copy(items = (listOfNotNull(exact) + items).distinctBy { it.packageName.lowercase() })
     }
     override suspend fun appDetail(packageName: String): AppDetail = api.detail(packageName).detail
+    override suspend fun appComments(app: MarketAppInfo): AppComments = api.appComments(app)
     override suspend fun downloadMeta(app: MarketAppInfo): DownloadMeta = api.downloadMeta(app)
     override suspend fun checkUpdates(): List<MarketAppInfo> = coroutineScope {
         installed.installed().filter { it.packageName.isNotBlank() && it.versionCode > 0 }

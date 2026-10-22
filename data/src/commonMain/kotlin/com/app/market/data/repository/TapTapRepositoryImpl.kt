@@ -9,6 +9,7 @@ import com.app.market.domain.exception.MarketException
 import com.app.market.domain.model.download.DownloadMeta
 import com.app.market.domain.model.download.DownloadPart
 import com.app.market.domain.model.installed.InstalledPackage
+import com.app.market.domain.model.market.AppComments
 import com.app.market.domain.model.market.AppDetail
 import com.app.market.domain.model.market.AppScreenshot
 import com.app.market.domain.model.market.AppSource
@@ -66,6 +67,14 @@ internal class TapTapRepositoryImpl(
         detail.toAppDetail(
             if (installed == null) merged.toApp() else merged.toApp().withInstalled(installed),
         )
+    }
+
+    override suspend fun appComments(app: MarketAppInfo): AppComments = withContext(Dispatchers.Default) {
+        val resolvedId = app.appId.takeIf { it > 0L && app.source == AppSource.TAPTAP }
+            ?: recordsByPackage[app.packageName.lowercase()]?.appId
+            ?: api.apps(listOf(app.packageName)).firstOrNull()?.also(::remember)?.appId
+            ?: throw MarketException("TapTap 未收录该应用")
+        api.appComments(resolvedId)
     }
 
     override suspend fun todayFeed(page: Int, pageSize: Int): TodayFeedPage = withContext(Dispatchers.Default) {

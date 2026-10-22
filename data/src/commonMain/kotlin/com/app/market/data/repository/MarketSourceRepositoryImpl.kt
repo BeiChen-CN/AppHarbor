@@ -16,6 +16,7 @@ import com.app.market.domain.exception.MarketException
 import com.app.market.domain.repository.FdroidRepository
 import com.app.market.domain.repository.TencentRepository
 import com.app.market.domain.repository.CoolapkRepository
+import com.app.market.domain.repository.AppchinaRepository
 import com.app.market.domain.repository.HonorRepository
 import com.app.market.domain.repository.HuaweiRepository
 import com.app.market.domain.repository.KuaibaoRepository
@@ -42,6 +43,7 @@ internal class MarketSourceRepositoryImpl(
     private val huawei: HuaweiRepository,
     private val tapTap: TapTapRepository,
     private val kuaibao: KuaibaoRepository,
+    private val appchina: AppchinaRepository,
     private val fdroid: FdroidRepository,
     private val coolapk: CoolapkRepository,
     private val tencent: TencentRepository,
@@ -60,6 +62,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.HUAWEI -> huawei.search(keyword, page)
         AppSource.TAPTAP -> tapTap.search(keyword, page)
         AppSource.KUAIBAO -> kuaibao.search(keyword, page)
+        AppSource.APPCHINA -> appchina.search(keyword, page)
         AppSource.FDROID -> fdroid.search(keyword, page)
         AppSource.COOLAPK -> coolapk.search(keyword, page)
         AppSource.TENCENT -> tencent.search(keyword, page)
@@ -90,6 +93,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.HUAWEI -> huawei.appDetail(appId, packageName)
         AppSource.TAPTAP -> tapTap.appDetail(appId, packageName)
         AppSource.KUAIBAO -> kuaibao.appDetail(appId)
+        AppSource.APPCHINA -> appchina.appDetail(appId, packageName)
         // F-Droid 无站内数字 id，以 packageName 为真实键
         AppSource.FDROID -> fdroid.appDetail(packageName)
         AppSource.COOLAPK -> coolapk.appDetail(appId, packageName)
@@ -124,6 +128,12 @@ internal class MarketSourceRepositoryImpl(
                 catch (error: kotlinx.coroutines.CancellationException) { throw error }
                 catch (error: Exception) { commentTargets.invalidate(AppSource.KUAIBAO, app.packageName); throw error }
             }
+            // 应用汇详情页自带最近评论，直接按包名抓取
+            AppSource.APPCHINA -> appchina.appComments(app)
+            // 应用宝评论页内嵌结构化评分与评论正文
+            AppSource.TENCENT -> tencent.appComments(app)
+            // TapTap 网页版评价接口
+            AppSource.TAPTAP -> tapTap.appComments(app)
             AppSource.FDROID -> AppComments(emptyList(), 0L)
             else -> {
                 val xiaomi = if (app.source == AppSource.XIAOMI) app else commentTargets.resolve(AppSource.XIAOMI, app.packageName) { app.onXiaomi() }
@@ -150,6 +160,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.HUAWEI -> huawei.downloadMeta(app)
         AppSource.TAPTAP -> tapTap.downloadMeta(app)
         AppSource.KUAIBAO -> kuaibao.downloadMeta(app)
+        AppSource.APPCHINA -> appchina.downloadMeta(app)
         AppSource.FDROID -> fdroid.downloadMeta(app)
         AppSource.COOLAPK -> coolapk.downloadMeta(app)
         AppSource.TENCENT -> tencent.downloadMeta(app)
@@ -165,6 +176,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.WANDOUJIA -> market.downloadUpdateMeta(app.onXiaomi())
         // 好游快爆网页渠道不暴露版本号，同样回退小米
         AppSource.KUAIBAO -> market.downloadUpdateMeta(app.onXiaomi())
+        // 应用汇无原生批量更新协议，更新下载回退小米
+        AppSource.APPCHINA -> market.downloadUpdateMeta(app.onXiaomi())
         AppSource.OPPO -> oppo.downloadUpdateMeta(app)
         AppSource.SAMSUNG -> samsung.downloadUpdateMeta(app)
         AppSource.HONOR -> honor.downloadUpdateMeta(app)
@@ -193,6 +206,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.TAPTAP -> flow { emit(tapTap.checkUpdates()) }
         // 好游快爆无更新协议；能力声明已保证不会作为更新来源被选中
         AppSource.KUAIBAO -> flow { emit(emptyList()) }
+        // 应用汇无原生批量更新协议；能力声明已保证不会作为更新来源被选中
+        AppSource.APPCHINA -> flow { emit(emptyList()) }
         // P2 起通过仓库索引做本地比对，首次调用会触发索引同步（约 20MB gzip）
         AppSource.FDROID -> flow { emit(fdroid.checkUpdates()) }
         AppSource.COOLAPK -> flow { emit(coolapk.checkUpdates()) }
@@ -209,6 +224,7 @@ internal class MarketSourceRepositoryImpl(
             // 豌豆荚无原生手动更新协议，回退小米商店解析
             AppSource.WANDOUJIA -> market.checkManualUpdate(request)
             AppSource.KUAIBAO -> market.checkManualUpdate(request)
+            AppSource.APPCHINA -> market.checkManualUpdate(request)
             AppSource.OPPO -> oppo.checkManualUpdate(request)
             AppSource.SAMSUNG -> samsung.checkManualUpdate(request)
             AppSource.HONOR -> honor.checkManualUpdate(request)
@@ -226,7 +242,7 @@ internal class MarketSourceRepositoryImpl(
         when (source) {
             AppSource.OPPO -> oppo.beautyFeed(page, pageSize)
             // 无独立今日内容的来源回退小米商店今日。
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
                 today.goldMiFeed(page, pageSize)
 
             AppSource.VIVO -> vivo.auroraFeed(page, pageSize)
@@ -236,7 +252,7 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle =
         when (source) {
             AppSource.OPPO -> oppo.beautyArticle(rId)
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
                 today.todayArticle(rId)
 
             AppSource.VIVO -> vivo.auroraArticle(rId)
@@ -250,6 +266,7 @@ internal class MarketSourceRepositoryImpl(
         offset: Int,
     ): HistoricalVersionPage = when (source) {
         AppSource.WANDOUJIA -> wandoujia.historicalVersions(appId, packageName, offset)
+        AppSource.APPCHINA -> appchina.historicalVersions(appId, packageName, offset)
         AppSource.FDROID -> fdroid.historicalVersions(packageName, offset)
         AppSource.IZZYONDROID -> izzy.historicalVersions(packageName, offset)
         AppSource.FDROID_TUNA -> tuna.historicalVersions(packageName, offset)
@@ -260,6 +277,7 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun historicalDownloadMeta(source: AppSource, version: HistoricalVersion): DownloadMeta =
         when (source) {
             AppSource.WANDOUJIA -> wandoujia.historicalDownloadMeta(version)
+            AppSource.APPCHINA -> appchina.historicalDownloadMeta(version)
             AppSource.FDROID -> fdroid.historicalDownloadMeta(version)
             AppSource.IZZYONDROID -> izzy.historicalDownloadMeta(version)
             AppSource.FDROID_TUNA -> tuna.historicalDownloadMeta(version)
