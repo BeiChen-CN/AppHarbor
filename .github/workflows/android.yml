@@ -130,3 +130,13 @@ jobs:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-pattern }}
           if-no-files-found: error
+      - name: Publish Desktop Release
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FILE=$(find app/desktop/build/compose/binaries/main-release -type f \( -name '*.msi' -o -name '*.deb' \) | head -n 1)
+          if [ -n "$FILE" ]; then
+            gh release upload "${GITHUB_REF_NAME}" "$FILE" --clobber
+          fi
