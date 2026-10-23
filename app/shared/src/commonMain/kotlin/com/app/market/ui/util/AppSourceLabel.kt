@@ -8,6 +8,7 @@ import com.app.market.resources.source_fdroid_tuna
 import com.app.market.resources.source_izzyondroid
 import com.app.market.resources.source_github
 import com.app.market.resources.source_gitlab
+import com.app.market.resources.source_lsposed
 import com.app.market.resources.source_tencent
 import com.app.market.resources.source_box7723
 import com.app.market.resources.source_appchina
@@ -43,4 +44,5 @@ fun appSourceLabel(source: AppSource): String = when (source) {
     AppSource.IZZYONDROID -> stringResource(Res.string.source_izzyondroid)
     AppSource.GITHUB -> stringResource(Res.string.source_github)
     AppSource.GITLAB -> stringResource(Res.string.source_gitlab)
+    AppSource.LSPOSED -> stringResource(Res.string.source_lsposed)
 }

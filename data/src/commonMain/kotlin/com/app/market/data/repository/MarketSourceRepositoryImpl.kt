@@ -54,6 +54,7 @@ internal class MarketSourceRepositoryImpl(
     private val tencent: TencentRepository,
     private val izzy: FdroidRepository,
     private val releases: ReleaseSourceRepository,
+    private val lsposed: LsposedRepository,
     private val tuna: FdroidRepository,
 ) : MarketSourceRepository {
     private val commentTargets = CommentTargetCache()
@@ -75,6 +76,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.IZZYONDROID -> izzy.search(keyword, page)
         AppSource.FDROID_TUNA -> tuna.search(keyword, page)
         AppSource.GITHUB, AppSource.GITLAB -> releases.search(source, keyword, page)
+        AppSource.LSPOSED -> lsposed.search(keyword, page)
     }
 
     override suspend fun categoryApps(
@@ -122,6 +124,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.IZZYONDROID -> izzy.appDetail(packageName)
         AppSource.FDROID_TUNA -> tuna.appDetail(packageName)
         AppSource.GITHUB, AppSource.GITLAB -> releases.appDetail(source, appId, packageName)
+        AppSource.LSPOSED -> lsposed.appDetail(packageName)
     }
 
     override suspend fun appComments(source: AppSource, app: MarketAppInfo): AppComments {
@@ -189,6 +192,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.IZZYONDROID -> izzy.downloadMeta(app)
         AppSource.FDROID_TUNA -> tuna.downloadMeta(app)
         AppSource.GITHUB, AppSource.GITLAB -> releases.downloadMeta(source, app)
+        AppSource.LSPOSED -> lsposed.downloadMeta(app)
     }
 
     override suspend fun downloadUpdateMeta(source: AppSource, app: MarketAppInfo): DownloadMeta = when (source) {
@@ -213,6 +217,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.IZZYONDROID -> izzy.downloadMeta(app)
         AppSource.FDROID_TUNA -> tuna.downloadMeta(app)
         AppSource.GITHUB, AppSource.GITLAB -> releases.downloadMeta(source, app)
+        AppSource.LSPOSED -> lsposed.downloadMeta(app)
     }
 
     override suspend fun loadReconciledCachedUpdates(): List<MarketAppInfo> =
@@ -239,6 +244,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.IZZYONDROID -> flow { emit(izzy.checkUpdates()) }
         AppSource.FDROID_TUNA -> flow { emit(tuna.checkUpdates()) }
         AppSource.GITHUB, AppSource.GITLAB -> flow { emit(releases.checkUpdates(source)) }
+        AppSource.LSPOSED -> flow { emit(lsposed.checkUpdates()) }
     }
 
     override suspend fun checkManualUpdate(source: AppSource, request: ManualUpdateRequest): ManualUpdateResult =
@@ -261,13 +267,14 @@ internal class MarketSourceRepositoryImpl(
             AppSource.IZZYONDROID -> izzy.checkManualUpdate(request)
             AppSource.FDROID_TUNA -> tuna.checkManualUpdate(request)
             AppSource.GITHUB, AppSource.GITLAB -> releases.checkManualUpdate(source, request)
+            AppSource.LSPOSED -> lsposed.checkManualUpdate(request)
         }
 
     override suspend fun goldMiFeed(source: AppSource, page: Int, pageSize: Int): TodayFeedPage =
         when (source) {
             AppSource.OPPO -> oppo.beautyFeed(page, pageSize)
             // 无独立今日内容的来源回退小米商店今日。
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB, AppSource.LSPOSED ->
                 today.goldMiFeed(page, pageSize)
 
             AppSource.VIVO -> vivo.auroraFeed(page, pageSize)
@@ -277,7 +284,7 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle =
         when (source) {
             AppSource.OPPO -> oppo.beautyArticle(rId)
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB, AppSource.LSPOSED ->
                 today.todayArticle(rId)
 
             AppSource.VIVO -> vivo.auroraArticle(rId)

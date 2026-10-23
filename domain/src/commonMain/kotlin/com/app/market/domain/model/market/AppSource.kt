@@ -219,6 +219,19 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             prefersOpenLinkLaunch = false, reportsDeltaSize = false,
             supportsTodayFeed = false, todayFullCoverOverlay = false, supportsUpdates = true,
         ),
+    ),
+    LSPOSED(
+        "lsposed",
+        SourceCapabilities(
+            supportsComments = false,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            // 以 Xposed Module Repository 的正式版 Release 做更新比对
+            supportsUpdates = true,
+        ),
     );
 
     companion object {

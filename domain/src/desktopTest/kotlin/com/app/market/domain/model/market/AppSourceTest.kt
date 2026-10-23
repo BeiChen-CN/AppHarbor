@@ -28,6 +28,17 @@ class AppSourceTest {
         assertFalse(AppSource.COOLAPK.capabilities.supportsComments)
     }
     @Test
+    fun lsposedSourceSupportsSearchAndReleaseUpdates() {
+        assertEquals(setOf(AppSource.LSPOSED), AppSource.parse("lsposed"))
+        assertEquals("lsposed", AppSource.serialize(setOf(AppSource.LSPOSED)))
+        assertTrue(AppSource.LSPOSED.capabilities.supportsUpdates)
+        assertFalse(AppSource.LSPOSED.capabilities.supportsComments)
+        assertFalse(AppSource.LSPOSED.capabilities.supportsTodayFeed)
+        assertFalse(AppSource.LSPOSED.capabilities.supportsHistoricalVersions)
+        assertFalse(AppSource.LSPOSED.capabilities.supportsDeltaUpdates)
+    }
+
+    @Test
     fun legacyMultiSelectionMigratesToSingleSource() {
         assertEquals(setOf(AppSource.XIAOMI), AppSource.parse("xiaomi,vivo"))
         assertEquals(setOf(AppSource.WANDOUJIA), AppSource.parse("wandoujia"))

@@ -1,8 +1,8 @@
 object ProjectConfig {
     const val APP_NAME = "AppHarbor"
     const val PACKAGE_NAME = "com.app.market"
-    const val VERSION_NAME = "2.10.0"
-    const val VERSION_CODE = 236
+    const val VERSION_NAME = "2.11.0"
+    const val VERSION_CODE = 237
     const val JVM_VERSION = 21
 
     object Android {

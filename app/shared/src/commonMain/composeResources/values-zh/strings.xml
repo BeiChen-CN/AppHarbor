@@ -124,7 +124,9 @@
     <string name="source_izzyondroid">IzzyOnDroid</string>
     <string name="source_github">GitHub</string>
     <string name="source_gitlab">GitLab</string>
+    <string name="source_lsposed">LSPosed</string>
     <string name="search_repository_hint">搜索应用或输入仓库链接</string>
+    <string name="search_lsposed_hint">搜索 Xposed 模块名称或包名</string>
     <string name="source_honor">荣耀</string>
     <string name="source_huawei">华为</string>
     <string name="source_taptap">TapTap</string>

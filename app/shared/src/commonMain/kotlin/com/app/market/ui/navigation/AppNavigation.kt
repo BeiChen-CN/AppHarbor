@@ -293,4 +293,4 @@ internal fun Navigator.openMarketLink(link: MarketLink, xiaomiQuery: String? = n
 }
 
 /** 仅凭包名即可加载详情的来源。 */
-private val PackageResolvableSources = setOf(AppSource.XIAOMI, AppSource.HUAWEI, AppSource.HONOR, AppSource.TAPTAP)
+private val PackageResolvableSources = setOf(AppSource.XIAOMI, AppSource.HUAWEI, AppSource.HONOR, AppSource.TAPTAP, AppSource.LSPOSED)

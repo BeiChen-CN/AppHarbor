@@ -91,7 +91,9 @@ import org.koin.dsl.module
 import org.koin.dsl.onClose
 import org.koin.core.qualifier.named
 import com.app.market.data.repository.ReleaseSourceRepository
+import com.app.market.data.remote.lsposed.LsposedApi
 import com.app.market.data.remote.releases.ReleaseApi
+import com.app.market.data.repository.LsposedRepository
 import com.app.market.data.remote.fdroid.IzzyApiConfig
 import com.app.market.data.remote.fdroid.TunaApiConfig
 import com.app.market.data.download.MeteredDownloadRepository
@@ -165,6 +167,8 @@ private val commonDataModule = module {
     single<FdroidRepository>(named("tuna")) { FdroidRepositoryImpl(get(named("tuna")), get()) }
     singleOf(::ReleaseApi)
     single { ReleaseSourceRepository(get(), get(), get(), get(), get<com.app.market.data.remote.xiaomi.platform.DeviceDefaultsDataSource>().current().cpuArchitecture) }
+    singleOf(::LsposedApi)
+    single { LsposedRepository(get(), get(), get(), get<com.app.market.data.remote.xiaomi.platform.DeviceDefaultsDataSource>().current().cpuArchitecture) }
     single { TencentApiConfig() }
     singleOf(::TencentApi)
     singleOf(::TencentRepositoryImpl) { bind<TencentRepository>() }
@@ -177,7 +181,7 @@ private val commonDataModule = module {
             market = get(), today = get(), vivo = get(), wandoujia = get(), oppo = get(),
             samsung = get(), honor = get(), huawei = get(), tapTap = get(), kuaibao = get(), appchina = get(), box7723 = get(),
             fdroid = get(), coolapk = get(), tencent = get(), izzy = get(named("izzy")), releases = get(),
-            tuna = get(named("tuna")),
+            lsposed = get(), tuna = get(named("tuna")),
         )
     }
 
