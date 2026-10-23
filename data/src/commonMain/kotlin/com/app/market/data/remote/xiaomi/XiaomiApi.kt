@@ -47,6 +47,7 @@ internal class XiaomiApi(
     private val xiaomiClient: XiaomiClient,
 ) {
     private val MARKET = "https://app.market.xiaomi.com/apm"
+    private val WEB_CATEGORY = "https://app.mi.com/categotyAllListApi"
     private val EXP_ID = "$MARKET/expId"
     private val UPDATE = "https://updateinfo.market.xiaomi.com/apm/updateinfo/v2?lo=CN"
     private val DIFF_SIZE = "https://updateinfo.market.xiaomi.com/apm/updateinfo/diffsize?lo=CN"
@@ -102,6 +103,12 @@ internal class XiaomiApi(
         )
         val url = XiaomiSigner.signedUrl("$MARKET/search?${query(params)}")
         return parseSearch(parseJsonObject(http.get(url, cookie)), removeSearchAds)
+    }
+
+    /** Public web listing; unsigned and device-independent, so no profile/cookie is needed. */
+    suspend fun categoryApps(categoryId: Int, page: Int): SearchPage {
+        val url = "$WEB_CATEGORY?${query(mapOf("page" to page.toString(), "categoryId" to categoryId.toString(), "pageSize" to "30"))}"
+        return parseCategoryApps(parseJsonObject(http.get(url, "")))
     }
 
     suspend fun downloadMeta(app: MarketAppInfo, keyword: String, profile: MarketProfile, cookie: String): DownloadMeta {
@@ -983,6 +990,29 @@ internal class XiaomiApi(
         val items = out.distinctBy { it.packageName }
         // Trust the server's hasMore when present; otherwise keep paging until a page comes back empty.
         return SearchPage(items, hasMore = json.bool("hasMore", items.isNotEmpty()))
+    }
+
+    private fun parseCategoryApps(json: JsonObject): SearchPage {
+        val list = json.arr("data") ?: return SearchPage(emptyList(), hasMore = false)
+        val items = (0 until list.len).mapNotNull { i ->
+            val o = list.objAt(i) ?: return@mapNotNull null
+            val pkg = o.str("packageName")
+            if (pkg.isBlank()) return@mapNotNull null
+            MarketAppInfo(
+                appId = o.long("appId"),
+                packageName = pkg,
+                displayName = o.str("displayName", pkg),
+                publisherName = o.str("publisherName"),
+                versionName = "",
+                versionCode = 0L,
+                icon = o.str("icon").replaceFirst("http://", "https://"),
+                apkSize = o.long("apkSize") * 1024L,
+                ratingScore = o.double("ratingScore") / 2,
+                type = o.str("level1CategoryName"),
+                category = o.str("level2CategoryName", o.str("level1CategoryName")),
+            )
+        }.distinctBy { it.packageName }
+        return SearchPage(items, hasMore = json.bool("hasNext", items.isNotEmpty()))
     }
 
     private fun parseApps(arr: JsonArray, isSystemApp: Boolean = false): List<MarketAppInfo> {

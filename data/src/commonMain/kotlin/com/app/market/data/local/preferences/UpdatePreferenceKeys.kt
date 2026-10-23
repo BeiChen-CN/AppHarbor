@@ -13,6 +13,8 @@ object UpdatePreferenceKeys {
     val StripAppNameSubtitle = BooleanPreferenceKey(NS, "strip_app_name_subtitle")
     val ShowSameDeveloper = BooleanPreferenceKey(NS, "show_same_developer")
     val ShowPromotions = BooleanPreferenceKey(NS, "show_promotions")
+    val DetectClipboardLinks = BooleanPreferenceKey(NS, "detect_clipboard_links", true)
+    val LastClipboardLink = StringPreferenceKey(NS, "last_clipboard_link")
     val HomePage = StringPreferenceKey(NS, "home_page")
     val SearchSources = StringPreferenceKey(NS, "search_sources")
     val TodaySource = StringPreferenceKey(NS, "today_source")

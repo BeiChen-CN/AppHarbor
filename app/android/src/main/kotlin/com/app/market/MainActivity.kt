@@ -2,7 +2,6 @@ package com.app.market
 
 import android.content.Intent
 import android.graphics.Color
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,8 +14,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.app.market.domain.model.market.AppSource
+import com.app.market.domain.model.market.MarketLink
+import com.app.market.domain.model.market.MarketLinkParser
 import com.app.market.domain.repository.ThemePreferencesRepository
 import com.app.market.domain.repository.UpdatePreferencesRepository
 import com.app.market.platform.AndroidPermissionCoordinator
@@ -70,10 +71,10 @@ class MainActivity : ComponentActivity(), KoinComponent {
             val themePreferencesReady by themePreferences.initialized.collectAsState()
             if (preferencesReady && themePreferencesReady) {
                 App(
-                    externalDetailPackageName = detailRequest?.packageName,
+                    externalDetailLink = detailRequest?.link,
                     externalDetailQuery = detailRequest?.encodedQuery,
                     onExternalDetailConsumed = { consumed ->
-                        if (externalDetailRequest.value?.packageName == consumed) {
+                        if (externalDetailRequest.value?.link == consumed) {
                             externalDetailRequest.value = null
                         }
                     },
@@ -147,45 +148,18 @@ class MainActivity : ComponentActivity(), KoinComponent {
     private fun Intent?.detailRequest(): ExternalDetailRequest? {
         if (this?.action != Intent.ACTION_VIEW) return null
         val uri = data
-        val uriPackageName = uri?.detailPackageName()
-        val packageName = uriPackageName ?: stringExtraPackageName() ?: return null
-        val encodedQuery = uriPackageName
-            ?.let { uri.encodedQuery }
-            ?.takeIf(String::isNotBlank)
-            ?: "id=${Uri.encode(packageName)}"
-        return ExternalDetailRequest(packageName, encodedQuery)
+        val link = uri?.toString()?.let(MarketLinkParser::parse)
+            ?: stringExtraPackageName()?.let { MarketLink(it, source = null) }
+            ?: return null
+        val encodedQuery = uri?.encodedQuery
+            ?.takeIf { it.isNotBlank() && (link.source == null || link.source == AppSource.XIAOMI) }
+        return ExternalDetailRequest(link, encodedQuery)
     }
 
     private fun Intent.stringExtraPackageName(): String? =
         listOf("id", "packageName", "pName", "pkg", "package", "android.intent.extra.PACKAGE_NAME")
             .firstNotNullOfOrNull { key -> getStringExtra(key)?.asPackageName() }
 
-    private fun Uri.detailPackageName(): String? {
-        val scheme = scheme.orEmpty().lowercase()
-        val host = host.orEmpty().lowercase()
-        val path = path.orEmpty()
-        val supportsMarketLink = scheme in setOf("market", "mimarket") &&
-                host in setOf("details", "detail", "launchordetail", "app.xiaomi.com")
-        val supportsWebLink = scheme in setOf("http", "https") &&
-                host in setOf("m.app.mi.com", "app.mi.com", "app.xiaomi.com", "market.android.com", "play.google.com")
-        if (!supportsMarketLink && !supportsWebLink) return null
-
-        listOf("id", "packageName", "pName", "pkg", "package").forEach { key ->
-            getQueryParameter(key)?.asPackageName()?.let { return it }
-        }
-        if (host == "app.xiaomi.com" && path.isNotBlank()) {
-            path.trim('/').split('/').firstOrNull()?.asPackageName()?.let { return it }
-        }
-        return encodedSchemeSpecificPart
-            ?.substringAfter("?", missingDelimiterValue = "")
-            ?.takeIf { it.isNotBlank() }
-            ?.let { "market://details?$it".toUri() }
-            ?.let { parsed ->
-                listOf("id", "packageName", "pName", "pkg", "package").firstNotNullOfOrNull {
-                    parsed.getQueryParameter(it)?.asPackageName()
-                }
-            }
-    }
 
     private fun String.asPackageName(): String? =
         trim().takeIf { value ->
@@ -196,6 +170,6 @@ class MainActivity : ComponentActivity(), KoinComponent {
 }
 
 private data class ExternalDetailRequest(
-    val packageName: String,
-    val encodedQuery: String,
+    val link: MarketLink,
+    val encodedQuery: String?,
 )

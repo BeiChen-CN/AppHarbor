@@ -1,6 +1,7 @@
 package com.app.market.di
 
 import com.app.market.viewmodel.AppDetailViewModel
+import com.app.market.viewmodel.CategoryViewModel
 import com.app.market.viewmodel.DeviceProfileViewModel
 import com.app.market.viewmodel.DownloadingAppsViewModel
 import com.app.market.viewmodel.HistoricalVersionsViewModel
@@ -19,6 +20,7 @@ import com.app.market.viewmodel.DiscoveryViewModel
 
 val viewModelModule = module {
     viewModelOf(::DiscoveryViewModel)
+    viewModelOf(::CategoryViewModel)
     viewModelOf(::UpdatesViewModel)
     viewModelOf(::ThemeSettingsViewModel)
     viewModelOf(::UpdateHistoryViewModel)

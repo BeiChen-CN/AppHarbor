@@ -286,9 +286,12 @@
     <string name="image_save_unsupported">Saving images is only available on Android</string>
     <string name="source_tencent">Tencent App Store</string>
     <string name="source_appchina">AppChina</string>
+    <string name="source_box7723">7723</string>
     <string name="installer_delete_after_update">Delete packages after updates</string>
     <string name="installer_delete_after_update_summary">Delete this task’s installation packages, including copies in Download, only after a successful app update.</string>
     <string name="nav_games">Games</string>
+    <string name="nav_categories">Browse</string>
+    <string name="nav_apps">Apps</string>
     <string name="nav_recommendations">Recommendations</string>
     <string name="aggregate_updates">Aggregate updates</string>
     <string name="aggregate_updates_summary">Find the latest eligible version across selected sources</string>
@@ -302,6 +305,16 @@
     <string name="recommendation_source_summary">Used for recommendation content</string>
     <string name="recommendation_updates">Update prompt</string>
     <string name="recommendation_updates_summary">Show apps with pending updates on the recommendations page</string>
+    <string name="clipboard_link_detect">Detect store links in clipboard</string>
+    <string name="clipboard_link_detect_summary">Offer to open a store link found in the clipboard when you launch the app</string>
+    <string name="clipboard_link_title">Open this store link?</string>
+    <string name="clipboard_link_message">Your clipboard has a link to an app on %1$s: %2$s</string>
+    <string name="clipboard_link_generic_source">another store</string>
+    <string name="settings_search">Search settings</string>
+    <string name="settings_search_no_results">No settings found</string>
+    <string name="share">Share</string>
+    <string name="share_link_copied">Link copied</string>
+    <string name="share_failed">Couldn't share</string>
     <string name="switch_comment_source">Comments source</string>
     <string name="no_content">No content available</string>
     <string name="comments_empty">No comments available from this source</string>
@@ -346,4 +359,122 @@
     <string name="pinned_source_disabled_hint">The fixed source is disabled. Enable it in aggregate sources or restore automatic selection.</string>
     <string name="comments_unsupported">This source does not provide comments. Switch to another comment source.</string>
     <string name="comments_unresolved">Unable to find matching comments for this app. Try another comment source.</string>
+
+
+    <string name="theme_section_appearance">Appearance</string>
+
+    <string name="theme_dark_mode">Dark mode</string>
+
+    <string name="theme_amoled">Pure black background in dark mode</string>
+
+    <string name="theme_use_monet">Use Monet colors</string>
+
+    <string name="theme_color_spec">Color spec</string>
+
+    <string name="theme_color_spec_2021">Material 3 2021</string>
+
+    <string name="theme_color_spec_2025">Material 3 2025</string>
+
+    <string name="theme_color_spec_unsupported">This palette style has no 2025 variant</string>
+
+    <string name="theme_accent_color">Accent color</string>
+
+    <string name="theme_accent_default">Default</string>
+
+    <string name="theme_color_source">Color source</string>
+
+    <string name="theme_dark_mode_system">Follow system</string>
+
+    <string name="theme_dark_mode_light">Light</string>
+
+    <string name="theme_dark_mode_dark">Dark</string>
+
+    <string name="theme_color_source_default">Default colors</string>
+
+    <string name="theme_color_source_default_summary">Use the built-in Miuix palette</string>
+
+    <string name="theme_color_source_monet">Dynamic color (Monet)</string>
+
+    <string name="theme_color_source_monet_summary">Follow the system wallpaper colors</string>
+
+    <string name="theme_color_source_custom">Custom color</string>
+
+    <string name="theme_color_source_custom_summary">Generate the palette from a picked seed color</string>
+
+    <string name="theme_custom_color">Seed color</string>
+
+    <string name="theme_palette_style">Palette style</string>
+
+    <string name="theme_palette_tonal_spot">Tonal spot</string>
+
+    <string name="theme_palette_neutral">Neutral</string>
+
+    <string name="theme_palette_vibrant">Vibrant</string>
+
+    <string name="theme_palette_expressive">Expressive</string>
+
+    <string name="theme_palette_rainbow">Rainbow</string>
+
+    <string name="theme_palette_fruit_salad">Fruit salad</string>
+
+    <string name="theme_palette_monochrome">Monochrome</string>
+
+    <string name="theme_palette_fidelity">Fidelity</string>
+
+    <string name="theme_palette_content">Content</string>
+
+    <string name="theme_section_navigation">Navigation items</string>
+
+    <string name="theme_tab_today_summary">Show Today recommendations and articles</string>
+
+    <string name="theme_tab_games_summary">Browse games and rankings</string>
+
+    <string name="theme_tab_apps_summary">Browse apps and rankings</string>
+
+    <string name="theme_tab_updates_summary">Show app update status and history</string>
+
+    <string name="theme_tab_search_summary">Search applications across sources</string>
+
+    <string name="theme_section_interaction">Interaction</string>
+
+
+    <string name="category_tools">Tools</string>
+
+    <string name="category_media">Media</string>
+
+    <string name="category_social">Social</string>
+
+    <string name="category_office">Productivity</string>
+
+    <string name="category_education">Education</string>
+
+    <string name="category_shopping">Shopping</string>
+
+    <string name="category_sports">Sports</string>
+
+    <string name="game_category_all">All</string>
+
+    <string name="game_category_strategy">Strategy</string>
+
+    <string name="game_category_action">Action</string>
+
+    <string name="game_category_racing">Racing &amp; Sports</string>
+
+    <string name="game_category_rpg">Online RPG</string>
+
+    <string name="game_category_card">Cards &amp; Board</string>
+
+    <string name="game_category_fighting">Fighting</string>
+
+    <string name="game_category_kids">Kids &amp; Puzzle</string>
+
+    <string name="game_category_casual">Casual</string>
+
+    <string name="game_category_flight">Flight</string>
+
+    <string name="game_category_runner">Runner</string>
+
+    <string name="category_source">Games &amp; Apps source</string>
+
+    <string name="category_source_summary">Content source for the Games and Apps pages</string>
 </resources>

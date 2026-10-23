@@ -5,8 +5,12 @@ import com.app.market.data.platform.debugLog
 import com.app.market.data.remote.fdroid.FdroidApi
 import com.app.market.data.remote.appchina.AppchinaApi
 import com.app.market.data.remote.appchina.AppchinaApiConfig
+import com.app.market.data.remote.box7723.Box7723Api
+import com.app.market.data.remote.box7723.Box7723ApiConfig
 import com.app.market.data.repository.AppchinaRepositoryImpl
+import com.app.market.data.repository.Box7723RepositoryImpl
 import com.app.market.domain.repository.AppchinaRepository
+import com.app.market.domain.repository.Box7723Repository
 import com.app.market.data.remote.tencent.TencentApi
 import com.app.market.data.remote.tencent.TencentApiConfig
 import com.app.market.data.repository.TencentRepositoryImpl
@@ -42,6 +46,7 @@ import com.app.market.data.repository.HonorRepositoryImpl
 import com.app.market.data.repository.HuaweiRepositoryImpl
 import com.app.market.data.repository.KuaibaoRepositoryImpl
 import com.app.market.data.repository.MarketRepositoryImpl
+import com.app.market.data.repository.MarketLinkResolverImpl
 import com.app.market.data.repository.MarketSourceRepositoryImpl
 import com.app.market.data.repository.OppoRepositoryImpl
 import com.app.market.data.repository.ProfileRepositoryImpl
@@ -61,6 +66,7 @@ import com.app.market.domain.repository.HonorRepository
 import com.app.market.domain.repository.HuaweiRepository
 import com.app.market.domain.repository.KuaibaoRepository
 import com.app.market.domain.repository.MarketRepository
+import com.app.market.domain.repository.MarketLinkResolver
 import com.app.market.domain.repository.MarketSourceRepository
 import com.app.market.domain.repository.OppoRepository
 import com.app.market.domain.repository.ProfileRepository
@@ -119,6 +125,7 @@ private val commonDataModule = module {
     singleOf(::XiaomiApi)
     singleOf(::ProfileRepositoryImpl) { bind<ProfileRepository>() }
     singleOf(::MarketRepositoryImpl) { bind<MarketRepository>() }
+    single<MarketLinkResolver> { MarketLinkResolverImpl(get()) }
     singleOf(::TodayRepositoryImpl) { bind<TodayRepository>() }
     singleOf(::VivoApi)
     singleOf(::VivoUpdateApi)
@@ -146,6 +153,9 @@ private val commonDataModule = module {
     single { AppchinaApiConfig() }
     singleOf(::AppchinaApi)
     singleOf(::AppchinaRepositoryImpl) { bind<AppchinaRepository>() }
+    single { Box7723ApiConfig() }
+    singleOf(::Box7723Api)
+    singleOf(::Box7723RepositoryImpl) { bind<Box7723Repository>() }
     single { FdroidApiConfig() }
     singleOf(::FdroidApi)
     singleOf(::FdroidRepositoryImpl) { bind<FdroidRepository>() }
@@ -165,7 +175,7 @@ private val commonDataModule = module {
     single<MarketSourceRepository> {
         MarketSourceRepositoryImpl(
             market = get(), today = get(), vivo = get(), wandoujia = get(), oppo = get(),
-            samsung = get(), honor = get(), huawei = get(), tapTap = get(), kuaibao = get(), appchina = get(),
+            samsung = get(), honor = get(), huawei = get(), tapTap = get(), kuaibao = get(), appchina = get(), box7723 = get(),
             fdroid = get(), coolapk = get(), tencent = get(), izzy = get(named("izzy")), releases = get(),
             tuna = get(named("tuna")),
         )

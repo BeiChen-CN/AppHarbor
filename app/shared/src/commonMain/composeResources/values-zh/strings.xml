@@ -287,9 +287,12 @@
     <string name="image_save_unsupported">保存图片仅在 Android 上可用</string>
     <string name="source_tencent">应用宝</string>
     <string name="source_appchina">应用汇</string>
+    <string name="source_box7723">7723</string>
     <string name="installer_delete_after_update">更新后自动删除安装包</string>
     <string name="installer_delete_after_update_summary">仅在应用成功更新后删除本次任务的安装包（包括 Download 中的副本）。</string>
     <string name="nav_games">游戏</string>
+    <string name="nav_categories">分类</string>
+    <string name="nav_apps">应用</string>
     <string name="nav_recommendations">推荐</string>
     <string name="aggregate_updates">聚合更新</string>
     <string name="aggregate_updates_summary">在所选来源中查找最新可用版本</string>
@@ -303,6 +306,16 @@
     <string name="recommendation_source_summary">用于推荐页的内容</string>
     <string name="recommendation_updates">更新提示</string>
     <string name="recommendation_updates_summary">在推荐页显示有可用更新的应用</string>
+    <string name="clipboard_link_detect">识别剪贴板里的商店链接</string>
+    <string name="clipboard_link_detect_summary">进入应用时，如果剪贴板里有商店链接，会问你要不要打开</string>
+    <string name="clipboard_link_title">要打开这个商店链接吗？</string>
+    <string name="clipboard_link_message">剪贴板里有一个%1$s的应用链接：%2$s</string>
+    <string name="clipboard_link_generic_source">其他商店</string>
+    <string name="settings_search">搜索设置项</string>
+    <string name="settings_search_no_results">没有找到设置项</string>
+    <string name="share">分享</string>
+    <string name="share_link_copied">已复制链接</string>
+    <string name="share_failed">分享失败</string>
     <string name="switch_comment_source">评论换源</string>
     <string name="no_content">暂无内容</string>
     <string name="comments_empty">此来源暂无评论</string>
@@ -347,4 +360,122 @@
     <string name="pinned_source_disabled_hint">固定来源未参与聚合，请在设置中启用该来源或恢复自动选源</string>
     <string name="comments_unsupported">此来源不提供评论，可通过右上角切换评论来源</string>
     <string name="comments_unresolved">无法匹配此应用的评论，请尝试切换评论来源</string>
+
+
+    <string name="theme_section_appearance">外观</string>
+
+    <string name="theme_dark_mode">深色模式</string>
+
+    <string name="theme_amoled">深色使用纯黑背景</string>
+
+    <string name="theme_use_monet">使用 Monet 取色</string>
+
+    <string name="theme_color_spec">色彩标准</string>
+
+    <string name="theme_color_spec_2021">Material 3 2021</string>
+
+    <string name="theme_color_spec_2025">Material 3 2025</string>
+
+    <string name="theme_color_spec_unsupported">该调色板风格没有 2025 版本</string>
+
+    <string name="theme_accent_color">强调色</string>
+
+    <string name="theme_accent_default">默认</string>
+
+    <string name="theme_color_source">取色方式</string>
+
+    <string name="theme_dark_mode_system">跟随系统</string>
+
+    <string name="theme_dark_mode_light">浅色</string>
+
+    <string name="theme_dark_mode_dark">深色</string>
+
+    <string name="theme_color_source_default">默认配色</string>
+
+    <string name="theme_color_source_default_summary">使用内置的 Miuix 配色</string>
+
+    <string name="theme_color_source_monet">动态取色 (Monet)</string>
+
+    <string name="theme_color_source_monet_summary">跟随系统壁纸取色</string>
+
+    <string name="theme_color_source_custom">自定义取色</string>
+
+    <string name="theme_color_source_custom_summary">以选定的种子色生成整套配色</string>
+
+    <string name="theme_custom_color">种子色</string>
+
+    <string name="theme_palette_style">调色板风格</string>
+
+    <string name="theme_palette_tonal_spot">色调</string>
+
+    <string name="theme_palette_neutral">中性</string>
+
+    <string name="theme_palette_vibrant">生机</string>
+
+    <string name="theme_palette_expressive">表现</string>
+
+    <string name="theme_palette_rainbow">缤纷</string>
+
+    <string name="theme_palette_fruit_salad">果冻</string>
+
+    <string name="theme_palette_monochrome">单色</string>
+
+    <string name="theme_palette_fidelity">保真</string>
+
+    <string name="theme_palette_content">内容</string>
+
+    <string name="theme_section_navigation">导航栏项目</string>
+
+    <string name="theme_tab_today_summary">显示今日推荐与精选内容</string>
+
+    <string name="theme_tab_games_summary">浏览游戏与排行榜</string>
+
+    <string name="theme_tab_apps_summary">浏览应用与排行榜</string>
+
+    <string name="theme_tab_updates_summary">显示应用更新状态与记录</string>
+
+    <string name="theme_tab_search_summary">跨数据源搜索应用</string>
+
+    <string name="theme_section_interaction">手势与缩放</string>
+
+
+    <string name="category_tools">工具</string>
+
+    <string name="category_media">影音</string>
+
+    <string name="category_social">社交</string>
+
+    <string name="category_office">办公</string>
+
+    <string name="category_education">教育</string>
+
+    <string name="category_shopping">购物</string>
+
+    <string name="category_sports">运动</string>
+
+    <string name="game_category_all">全部</string>
+
+    <string name="game_category_strategy">战争策略</string>
+
+    <string name="game_category_action">动作枪战</string>
+
+    <string name="game_category_racing">赛车体育</string>
+
+    <string name="game_category_rpg">网游RPG</string>
+
+    <string name="game_category_card">棋牌桌游</string>
+
+    <string name="game_category_fighting">格斗快打</string>
+
+    <string name="game_category_kids">儿童益智</string>
+
+    <string name="game_category_casual">休闲创意</string>
+
+    <string name="game_category_flight">飞行空战</string>
+
+    <string name="game_category_runner">跑酷闯关</string>
+
+    <string name="category_source">游戏与应用来源</string>
+
+    <string name="category_source_summary">游戏、应用页的内容来源</string>
 </resources>

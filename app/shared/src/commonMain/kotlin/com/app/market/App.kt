@@ -10,7 +10,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import com.app.market.domain.model.theme.ThemeColorMode
+import com.app.market.domain.model.theme.ThemeColorSource
+import com.app.market.domain.model.theme.ThemeColorSpec
+import com.app.market.domain.model.theme.ThemePaletteStyle
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +35,7 @@ import com.app.market.domain.repository.MeteredDownloadConfirmation
 import com.app.market.domain.repository.InstallerPreferencesRepository
 import com.app.market.domain.repository.ProfileRepository
 import com.app.market.domain.repository.ThemePreferencesRepository
+import com.app.market.domain.model.market.MarketLink
 import com.app.market.domain.repository.UpdatePreferencesRepository
 import com.app.market.platform.ApplyPredictiveBackPreference
 import com.app.market.platform.UiPlatform
@@ -63,13 +70,18 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.ThemeColorSpec as MiuixColorSpec
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle as MiuixPaletteStyle
 import top.yukonga.miuix.kmp.window.WindowDialog
+
+private const val DEFAULT_SEED_COLOR = 0xFF5B7CFFL
 
 @Composable
 fun App(
-    externalDetailPackageName: String? = null,
+    externalDetailLink: MarketLink? = null,
     externalDetailQuery: String? = null,
-    onExternalDetailConsumed: (String) -> Unit = {},
+    onExternalDetailConsumed: (MarketLink) -> Unit = {},
     externalSearchKeyword: String? = null,
     onExternalSearchConsumed: (String) -> Unit = {},
     externalOpenDownloads: Boolean = false,
@@ -83,6 +95,12 @@ fun App(
     val updatePrefs = koinInject<UpdatePreferencesRepository>()
     val themePrefs = koinInject<ThemePreferencesRepository>()
     val colorSchemeModeToken by themePrefs.colorSchemeMode.collectAsStateWithLifecycle()
+    val colorMode by themePrefs.colorMode.collectAsStateWithLifecycle()
+    val colorSource by themePrefs.colorSource.collectAsStateWithLifecycle()
+    val seedColor by themePrefs.seedColor.collectAsStateWithLifecycle()
+    val paletteStyle by themePrefs.paletteStyle.collectAsStateWithLifecycle()
+    val colorSpec by themePrefs.colorSpec.collectAsStateWithLifecycle()
+    val amoledDark by themePrefs.amoledDark.collectAsStateWithLifecycle()
     val enableBlur by themePrefs.enableBlur.collectAsStateWithLifecycle()
     val enableFloatingBottomBar by themePrefs.enableFloatingBottomBar.collectAsStateWithLifecycle()
     val enableFloatingBottomBarBlur by themePrefs.enableFloatingBottomBarBlur.collectAsStateWithLifecycle()
@@ -110,9 +128,65 @@ fun App(
     }
     LaunchedEffect(Unit) { runCatching { profileStore.syncFromServerIfDue() } }
     val colorSchemeMode = remember(colorSchemeModeToken) { parseColorSchemeMode(colorSchemeModeToken) }
-    val controller = remember(colorSchemeMode) { ThemeController(colorSchemeMode) }
+    val controller = remember(colorMode, colorSource, seedColor, paletteStyle, colorSpec, colorSchemeMode) {
+        val darkMode = when (colorMode) {
+            ThemeColorMode.SYSTEM -> ColorSchemeMode.System
+            ThemeColorMode.LIGHT -> ColorSchemeMode.Light
+            ThemeColorMode.DARK -> ColorSchemeMode.Dark
+        }
+        val monetMode = when (colorMode) {
+            ThemeColorMode.SYSTEM -> ColorSchemeMode.MonetSystem
+            ThemeColorMode.LIGHT -> ColorSchemeMode.MonetLight
+            ThemeColorMode.DARK -> ColorSchemeMode.MonetDark
+        }
+        val miuixPalette = when (paletteStyle) {
+            ThemePaletteStyle.TONAL_SPOT -> MiuixPaletteStyle.TonalSpot
+            ThemePaletteStyle.NEUTRAL -> MiuixPaletteStyle.Neutral
+            ThemePaletteStyle.VIBRANT -> MiuixPaletteStyle.Vibrant
+            ThemePaletteStyle.EXPRESSIVE -> MiuixPaletteStyle.Expressive
+            ThemePaletteStyle.RAINBOW -> MiuixPaletteStyle.Rainbow
+            ThemePaletteStyle.FRUIT_SALAD -> MiuixPaletteStyle.FruitSalad
+            ThemePaletteStyle.MONOCHROME -> MiuixPaletteStyle.Monochrome
+            ThemePaletteStyle.FIDELITY -> MiuixPaletteStyle.Fidelity
+            ThemePaletteStyle.CONTENT -> MiuixPaletteStyle.Content
+        }
+        val miuixSpec = when (colorSpec) {
+            ThemeColorSpec.SPEC_2021 -> MiuixColorSpec.Spec2021
+            ThemeColorSpec.SPEC_2025 -> MiuixColorSpec.Spec2025
+        }
+        when (colorSource) {
+            ThemeColorSource.DEFAULT -> ThemeController(
+                colorSchemeMode = darkMode,
+                paletteStyle = miuixPalette,
+                colorSpec = miuixSpec,
+            )
+            ThemeColorSource.MONET, ThemeColorSource.CUSTOM -> ThemeController(
+                colorSchemeMode = monetMode,
+                keyColor = Color(seedColor ?: DEFAULT_SEED_COLOR),
+                paletteStyle = miuixPalette,
+                colorSpec = miuixSpec,
+            )
+        }
+    }
     ApplyPredictiveBackPreference(enablePredictiveBack)
-    MiuixTheme(controller = controller) {
+    val baseColors = controller.currentColors()
+    val themeIsDark = when (controller.colorSchemeMode) {
+        ColorSchemeMode.Dark, ColorSchemeMode.MonetDark -> true
+        ColorSchemeMode.Light, ColorSchemeMode.MonetLight -> false
+        ColorSchemeMode.System, ColorSchemeMode.MonetSystem -> isSystemInDarkTheme()
+    }
+    val themeColors = if (amoledDark && themeIsDark) {
+        baseColors.copy(
+            background = Color.Black,
+            surface = Color.Black,
+            surfaceContainer = Color.Black,
+            surfaceContainerHigh = Color(0xFF0C0C0C),
+            surfaceContainerHighest = Color(0xFF151515),
+        )
+    } else {
+        baseColors
+    }
+    MiuixTheme(colors = themeColors) {
         val systemDensity = LocalDensity.current
         val scaledDensity = remember(systemDensity, pageScale) {
             Density(systemDensity.density * pageScale, systemDensity.fontScale)
@@ -127,7 +201,7 @@ fun App(
             LocalEnableNavigationBadge provides enableNavigationBadge,
         ) {
             AppNavigation(
-                externalDetailPackageName = externalDetailPackageName,
+                externalDetailLink = externalDetailLink,
                 externalDetailQuery = externalDetailQuery,
                 onExternalDetailConsumed = onExternalDetailConsumed,
                 externalSearchKeyword = externalSearchKeyword,

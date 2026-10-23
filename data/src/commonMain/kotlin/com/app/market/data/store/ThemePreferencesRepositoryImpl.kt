@@ -5,6 +5,10 @@ import com.app.market.data.local.preferences.ThemePreferenceKeys
 import com.app.market.data.platform.ThemePlatformPreferences
 import com.app.market.data.platform.debugLog
 import com.app.market.domain.repository.ColorSchemeModeTokens
+import com.app.market.domain.model.theme.ThemeColorMode
+import com.app.market.domain.model.theme.ThemeColorSource
+import com.app.market.domain.model.theme.ThemeColorSpec
+import com.app.market.domain.model.theme.ThemePaletteStyle
 import com.app.market.domain.repository.ThemePreferencesRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -24,6 +28,18 @@ internal class ThemePreferencesRepositoryImpl(
     override val initialized: StateFlow<Boolean> = _initialized.asStateFlow()
     private val _colorSchemeMode = MutableStateFlow(ColorSchemeModeTokens.Default)
     override val colorSchemeMode: StateFlow<String> = _colorSchemeMode.asStateFlow()
+    private val _colorMode = MutableStateFlow(ThemeColorMode.SYSTEM)
+    override val colorMode: StateFlow<ThemeColorMode> = _colorMode.asStateFlow()
+    private val _colorSource = MutableStateFlow(ThemeColorSource.DEFAULT)
+    override val colorSource: StateFlow<ThemeColorSource> = _colorSource.asStateFlow()
+    private val _seedColor = MutableStateFlow<Long?>(null)
+    override val seedColor: StateFlow<Long?> = _seedColor.asStateFlow()
+    private val _paletteStyle = MutableStateFlow(ThemePaletteStyle.TONAL_SPOT)
+    override val paletteStyle: StateFlow<ThemePaletteStyle> = _paletteStyle.asStateFlow()
+    private val _colorSpec = MutableStateFlow(ThemeColorSpec.SPEC_2021)
+    override val colorSpec: StateFlow<ThemeColorSpec> = _colorSpec.asStateFlow()
+    private val _amoledDark = MutableStateFlow(false)
+    override val amoledDark: StateFlow<Boolean> = _amoledDark.asStateFlow()
     private val _enableBlur = MutableStateFlow(ThemePreferenceKeys.EnableBlur.default)
     override val enableBlur: StateFlow<Boolean> = _enableBlur.asStateFlow()
     private val _enableFloatingBottomBar = MutableStateFlow(ThemePreferenceKeys.EnableFloatingBottomBar.default)
@@ -43,6 +59,24 @@ internal class ThemePreferencesRepositoryImpl(
         val arrivals = listOf(
             observe("colorSchemeMode", preferences.observe(ThemePreferenceKeys.ColorSchemeMode)) {
                 _colorSchemeMode.value = ColorSchemeModeTokens.fromToken(it)
+            },
+            observe("colorMode", preferences.observe(ThemePreferenceKeys.ColorMode)) {
+                _colorMode.value = ThemeColorMode.fromKey(it)
+            },
+            observe("colorSource", preferences.observe(ThemePreferenceKeys.ColorSource)) {
+                _colorSource.value = ThemeColorSource.fromKey(it)
+            },
+            observe("seedColor", preferences.observe(ThemePreferenceKeys.SeedColor)) {
+                _seedColor.value = it?.toLongOrNull()
+            },
+            observe("paletteStyle", preferences.observe(ThemePreferenceKeys.PaletteStyle)) {
+                _paletteStyle.value = ThemePaletteStyle.fromKey(it)
+            },
+            observe("colorSpec", preferences.observe(ThemePreferenceKeys.ColorSpec)) {
+                _colorSpec.value = ThemeColorSpec.fromKey(it)
+            },
+            observe("amoledDark", preferences.observe(ThemePreferenceKeys.AmoledDark)) {
+                _amoledDark.value = it
             },
             observe("enableBlur", preferences.observe(ThemePreferenceKeys.EnableBlur)) { _enableBlur.value = it },
             observe("enableFloatingBottomBar", preferences.observe(ThemePreferenceKeys.EnableFloatingBottomBar)) {
@@ -95,6 +129,24 @@ internal class ThemePreferencesRepositoryImpl(
 
     override suspend fun setColorSchemeMode(value: String) =
         preferences.put(ThemePreferenceKeys.ColorSchemeMode, ColorSchemeModeTokens.fromToken(value))
+
+    override suspend fun setColorMode(value: ThemeColorMode) =
+        preferences.put(ThemePreferenceKeys.ColorMode, value.key)
+
+    override suspend fun setColorSource(value: ThemeColorSource) =
+        preferences.put(ThemePreferenceKeys.ColorSource, value.key)
+
+    override suspend fun setSeedColor(value: Long?) =
+        preferences.put(ThemePreferenceKeys.SeedColor, value?.toString().orEmpty())
+
+    override suspend fun setPaletteStyle(value: ThemePaletteStyle) =
+        preferences.put(ThemePreferenceKeys.PaletteStyle, value.key)
+
+    override suspend fun setColorSpec(value: ThemeColorSpec) =
+        preferences.put(ThemePreferenceKeys.ColorSpec, value.key)
+
+    override suspend fun setAmoledDark(value: Boolean) =
+        preferences.put(ThemePreferenceKeys.AmoledDark, value)
 
     override suspend fun setEnableBlur(value: Boolean) = preferences.put(ThemePreferenceKeys.EnableBlur, value)
     override suspend fun setEnableFloatingBottomBar(value: Boolean) = preferences.put(ThemePreferenceKeys.EnableFloatingBottomBar, value)

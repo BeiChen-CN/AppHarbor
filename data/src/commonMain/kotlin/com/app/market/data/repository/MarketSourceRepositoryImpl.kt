@@ -2,8 +2,11 @@ package com.app.market.data.repository
 
 import com.app.market.domain.model.download.DownloadMeta
 import com.app.market.domain.model.market.AppComments
+import com.app.market.domain.model.market.AppCategory
 import com.app.market.domain.model.market.AppDetail
 import com.app.market.domain.model.market.AppSource
+import com.app.market.domain.model.market.AppSubCategory
+import com.app.market.domain.model.market.GameSubCategory
 import com.app.market.domain.model.market.HistoricalVersion
 import com.app.market.domain.model.market.HistoricalVersionPage
 import com.app.market.domain.model.market.MarketAppInfo
@@ -17,6 +20,7 @@ import com.app.market.domain.repository.FdroidRepository
 import com.app.market.domain.repository.TencentRepository
 import com.app.market.domain.repository.CoolapkRepository
 import com.app.market.domain.repository.AppchinaRepository
+import com.app.market.domain.repository.Box7723Repository
 import com.app.market.domain.repository.HonorRepository
 import com.app.market.domain.repository.HuaweiRepository
 import com.app.market.domain.repository.KuaibaoRepository
@@ -44,6 +48,7 @@ internal class MarketSourceRepositoryImpl(
     private val tapTap: TapTapRepository,
     private val kuaibao: KuaibaoRepository,
     private val appchina: AppchinaRepository,
+    private val box7723: Box7723Repository,
     private val fdroid: FdroidRepository,
     private val coolapk: CoolapkRepository,
     private val tencent: TencentRepository,
@@ -63,12 +68,25 @@ internal class MarketSourceRepositoryImpl(
         AppSource.TAPTAP -> tapTap.search(keyword, page)
         AppSource.KUAIBAO -> kuaibao.search(keyword, page)
         AppSource.APPCHINA -> appchina.search(keyword, page)
+        AppSource.BOX7723 -> box7723.search(keyword, page)
         AppSource.FDROID -> fdroid.search(keyword, page)
         AppSource.COOLAPK -> coolapk.search(keyword, page)
         AppSource.TENCENT -> tencent.search(keyword, page)
         AppSource.IZZYONDROID -> izzy.search(keyword, page)
         AppSource.FDROID_TUNA -> tuna.search(keyword, page)
         AppSource.GITHUB, AppSource.GITLAB -> releases.search(source, keyword, page)
+    }
+
+    override suspend fun categoryApps(
+        source: AppSource,
+        category: AppCategory,
+        subCategory: AppSubCategory,
+        gameSubCategory: GameSubCategory,
+        page: Int,
+    ): SearchPage {
+        // 当前统一使用小米公开网页分类接口；其余来源的分类 API 尚未接入。
+        val categoryId = if (category == AppCategory.GAMES) gameSubCategory.xiaomiCategoryId else subCategory.xiaomiCategoryId
+        return market.categoryApps(categoryId, page)
     }
 
     override suspend fun appDetail(
@@ -94,6 +112,9 @@ internal class MarketSourceRepositoryImpl(
         AppSource.TAPTAP -> tapTap.appDetail(appId, packageName)
         AppSource.KUAIBAO -> kuaibao.appDetail(appId)
         AppSource.APPCHINA -> appchina.appDetail(appId, packageName)
+        AppSource.BOX7723 -> box7723.appDetail(
+            resolveStoreAppId(source, packageName, appId) { box7723.search(it, 0) },
+        )
         // F-Droid 无站内数字 id，以 packageName 为真实键
         AppSource.FDROID -> fdroid.appDetail(packageName)
         AppSource.COOLAPK -> coolapk.appDetail(appId, packageName)
@@ -161,6 +182,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.TAPTAP -> tapTap.downloadMeta(app)
         AppSource.KUAIBAO -> kuaibao.downloadMeta(app)
         AppSource.APPCHINA -> appchina.downloadMeta(app)
+        AppSource.BOX7723 -> box7723.downloadMeta(app)
         AppSource.FDROID -> fdroid.downloadMeta(app)
         AppSource.COOLAPK -> coolapk.downloadMeta(app)
         AppSource.TENCENT -> tencent.downloadMeta(app)
@@ -178,6 +200,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.KUAIBAO -> market.downloadUpdateMeta(app.onXiaomi())
         // 应用汇无原生批量更新协议，更新下载回退小米
         AppSource.APPCHINA -> market.downloadUpdateMeta(app.onXiaomi())
+        AppSource.BOX7723 -> market.downloadUpdateMeta(app.onXiaomi())
         AppSource.OPPO -> oppo.downloadUpdateMeta(app)
         AppSource.SAMSUNG -> samsung.downloadUpdateMeta(app)
         AppSource.HONOR -> honor.downloadUpdateMeta(app)
@@ -208,6 +231,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.KUAIBAO -> flow { emit(emptyList()) }
         // 应用汇无原生批量更新协议；能力声明已保证不会作为更新来源被选中
         AppSource.APPCHINA -> flow { emit(emptyList()) }
+        AppSource.BOX7723 -> flow { emit(emptyList()) }
         // P2 起通过仓库索引做本地比对，首次调用会触发索引同步（约 20MB gzip）
         AppSource.FDROID -> flow { emit(fdroid.checkUpdates()) }
         AppSource.COOLAPK -> flow { emit(coolapk.checkUpdates()) }
@@ -225,6 +249,7 @@ internal class MarketSourceRepositoryImpl(
             AppSource.WANDOUJIA -> market.checkManualUpdate(request)
             AppSource.KUAIBAO -> market.checkManualUpdate(request)
             AppSource.APPCHINA -> market.checkManualUpdate(request)
+            AppSource.BOX7723 -> market.checkManualUpdate(request)
             AppSource.OPPO -> oppo.checkManualUpdate(request)
             AppSource.SAMSUNG -> samsung.checkManualUpdate(request)
             AppSource.HONOR -> honor.checkManualUpdate(request)
@@ -242,7 +267,7 @@ internal class MarketSourceRepositoryImpl(
         when (source) {
             AppSource.OPPO -> oppo.beautyFeed(page, pageSize)
             // 无独立今日内容的来源回退小米商店今日。
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
                 today.goldMiFeed(page, pageSize)
 
             AppSource.VIVO -> vivo.auroraFeed(page, pageSize)
@@ -252,7 +277,7 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle =
         when (source) {
             AppSource.OPPO -> oppo.beautyArticle(rId)
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB ->
                 today.todayArticle(rId)
 
             AppSource.VIVO -> vivo.auroraArticle(rId)

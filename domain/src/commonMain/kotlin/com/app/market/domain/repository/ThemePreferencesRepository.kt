@@ -1,6 +1,10 @@
 package com.app.market.domain.repository
 
 import kotlinx.coroutines.flow.StateFlow
+import com.app.market.domain.model.theme.ThemeColorMode
+import com.app.market.domain.model.theme.ThemeColorSource
+import com.app.market.domain.model.theme.ThemeColorSpec
+import com.app.market.domain.model.theme.ThemePaletteStyle
 
 /** 配色模式的持久化 token，与 UI 层的 miuix ColorSchemeMode 解耦。 */
 object ColorSchemeModeTokens {
@@ -23,6 +27,12 @@ object ColorSchemeModeTokens {
 interface ThemePreferencesRepository {
     val initialized: StateFlow<Boolean>
     val colorSchemeMode: StateFlow<String>
+    val colorMode: StateFlow<ThemeColorMode>
+    val colorSource: StateFlow<ThemeColorSource>
+    val seedColor: StateFlow<Long?>
+    val paletteStyle: StateFlow<ThemePaletteStyle>
+    val colorSpec: StateFlow<ThemeColorSpec>
+    val amoledDark: StateFlow<Boolean>
     val enableBlur: StateFlow<Boolean>
     val enableFloatingBottomBar: StateFlow<Boolean>
     val enableFloatingBottomBarBlur: StateFlow<Boolean>
@@ -32,6 +42,12 @@ interface ThemePreferencesRepository {
     val pageScale: StateFlow<Float>
 
     suspend fun setColorSchemeMode(value: String)
+    suspend fun setColorMode(value: ThemeColorMode)
+    suspend fun setColorSource(value: ThemeColorSource)
+    suspend fun setSeedColor(value: Long?)
+    suspend fun setPaletteStyle(value: ThemePaletteStyle)
+    suspend fun setColorSpec(value: ThemeColorSpec)
+    suspend fun setAmoledDark(value: Boolean)
     suspend fun setEnableBlur(value: Boolean)
     suspend fun setEnableFloatingBottomBar(value: Boolean)
     suspend fun setEnableFloatingBottomBarBlur(value: Boolean)

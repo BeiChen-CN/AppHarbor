@@ -57,8 +57,11 @@ import com.app.market.resources.Res
 import com.app.market.resources.nav_search
 import com.app.market.resources.nav_settings
 import com.app.market.resources.nav_updates
+import com.app.market.resources.nav_categories
 import com.app.market.resources.nav_recommendations
+import com.app.market.ui.screen.CategoryTab
 import com.app.market.ui.screen.DiscoveryTab
+import com.app.market.viewmodel.CategoryViewModel
 import com.app.market.viewmodel.DiscoveryViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import com.app.market.ui.component.FloatingBottomBar
@@ -97,6 +100,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Create
+import top.yukonga.miuix.kmp.icon.extended.Play
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Update
@@ -104,7 +108,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
 // 主页签集合按平台能力裁剪：桌面端（无法扫描已装应用 / 安装）不含「更新」。
-private enum class MainTab { Recommendations, Updates, Search, Settings }
+private enum class MainTab { Recommendations, Category, Updates, Search, Settings }
 
 @Composable
 fun MainPage(
@@ -125,6 +129,7 @@ fun MainPage(
     val tabs = remember(appManagementSupported) {
         buildList {
             add(MainTab.Recommendations)
+            add(MainTab.Category)
             if (appManagementSupported) add(MainTab.Updates)
             add(MainTab.Search)
             add(MainTab.Settings)
@@ -210,6 +215,11 @@ fun MainPage(
                     DiscoveryTab(viewModel, bottomPadding, openDetail,
                         updatesViewModel = updatesViewModel.takeIf { appManagementSupported },
                         onViewUpdates = { tabs.indexOf(MainTab.Updates).takeIf { it >= 0 }?.let(mainPagerState::animateToPage) })
+                }
+
+                MainTab.Category -> {
+                    val viewModel = koinViewModel<CategoryViewModel>()
+                    CategoryTab(viewModel, bottomPadding, openDetail)
                 }
 
                 MainTab.Updates -> UpdatesTab(
@@ -397,6 +407,7 @@ private fun HomePage.toTab(): MainTab = when (this) {
 private val MainTab.icon
     get() = when (this) {
         MainTab.Recommendations -> RecommendationTabIcon
+        MainTab.Category -> MiuixIcons.Play
         MainTab.Updates -> MiuixIcons.Update
         MainTab.Search -> MiuixIcons.Search
         MainTab.Settings -> MiuixIcons.Settings
@@ -405,6 +416,7 @@ private val MainTab.icon
 private val MainTab.labelRes
     get() = when (this) {
         MainTab.Recommendations -> Res.string.nav_recommendations
+        MainTab.Category -> Res.string.nav_categories
         MainTab.Updates -> Res.string.nav_updates
         MainTab.Search -> Res.string.nav_search
         MainTab.Settings -> Res.string.nav_settings

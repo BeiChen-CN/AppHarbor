@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.Flow
  */
 interface MarketRepository {
     suspend fun search(keyword: String, page: Int = 0): SearchPage
+    suspend fun categoryApps(categoryId: Int, page: Int = 0): SearchPage =
+        SearchPage(emptyList(), hasMore = false)
 
     /** Loads only the data required to render the detail page's primary content. */
     suspend fun appDetail(appId: Long, packageName: String, externalQuery: String? = null): AppDetail

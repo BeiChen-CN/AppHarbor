@@ -257,6 +257,7 @@ private class ControlledPreferencesDataSource(
         emit(UpdatePreferenceKeys.ShowAppComments, false)
         emit(UpdatePreferenceKeys.ShowSameDeveloper, false)
         emit(UpdatePreferenceKeys.ShowPromotions, false)
+        emit(UpdatePreferenceKeys.DetectClipboardLinks, true)
         emit(UpdatePreferenceKeys.StripAppNameSubtitle, false)
         // 空串代表未配置过，回退默认源
         emit(UpdatePreferenceKeys.SearchSources, "")

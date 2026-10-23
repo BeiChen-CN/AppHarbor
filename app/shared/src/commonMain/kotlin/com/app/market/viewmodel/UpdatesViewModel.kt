@@ -93,6 +93,7 @@ class UpdatesViewModel(
     val showAppComments: StateFlow<Boolean> = prefs.showAppComments
     val showSameDeveloper: StateFlow<Boolean> = prefs.showSameDeveloper
     val showPromotions: StateFlow<Boolean> = prefs.showPromotions
+    val detectClipboardLinks: StateFlow<Boolean> = prefs.detectClipboardLinks
 
     // 全局应用名精简开关；App 根部经 CompositionLocal 下发，这里仅供设置页读写。
     val stripAppNameSubtitle: StateFlow<Boolean> = prefs.stripAppNameSubtitle
@@ -162,6 +163,7 @@ class UpdatesViewModel(
     fun setShowAppComments(value: Boolean) = persist { prefs.setShowAppComments(value) }
     fun setShowSameDeveloper(value: Boolean) = persist { prefs.setShowSameDeveloper(value) }
     fun setShowPromotions(value: Boolean) = persist { prefs.setShowPromotions(value) }
+    fun setDetectClipboardLinks(value: Boolean) = persist { prefs.setDetectClipboardLinks(value) }
     fun setStripAppNameSubtitle(value: Boolean) = persist { prefs.setStripAppNameSubtitle(value) }
     fun setHomePage(value: HomePage) = persist { prefs.setHomePage(value) }
     fun setSearchSource(value: AppSource) = persist { prefs.setSearchSources(setOf(value)) }

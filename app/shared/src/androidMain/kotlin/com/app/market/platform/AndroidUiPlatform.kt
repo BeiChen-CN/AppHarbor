@@ -1,6 +1,7 @@
 package com.app.market.platform
 
 import android.content.ComponentName
+import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -25,6 +26,26 @@ class AndroidUiPlatform(
     private val permissions: AndroidPermissionCoordinator,
 ) : UiPlatform {
     override val packageInstallationSupported: Boolean = true
+
+    // 仅比较剪贴板描述的时间戳：读描述不会触发系统「已粘贴」提示，内容没变就不读正文
+    private var lastClipTimestamp = -1L
+
+    override suspend fun readNewClipboardText(): String? {
+        val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return null
+        val description = clipboard.primaryClipDescription ?: return null
+        if (!description.hasMimeType("text/*")) return null
+        if (description.timestamp == lastClipTimestamp) return null
+        lastClipTimestamp = description.timestamp
+        return clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString()
+    }
+
+    override fun shareText(text: String): ShareResult {
+        val send = Intent(Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT, text)
+        val chooser = Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return if (runCatching { context.startActivity(chooser) }.isSuccess) ShareResult.Shared else ShareResult.Failed
+    }
 
     override fun showToast(message: String) {
         if (Looper.myLooper() == Looper.getMainLooper()) {

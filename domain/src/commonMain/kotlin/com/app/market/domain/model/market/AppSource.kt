@@ -160,6 +160,18 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             supportsUpdates = true,
         ),
     ),
+    BOX7723(
+        "7723",
+        SourceCapabilities(
+            supportsComments = false,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = true,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            supportsUpdates = false,
+        ),
+    ),
     FDROID(
         "fdroid",
         SourceCapabilities(

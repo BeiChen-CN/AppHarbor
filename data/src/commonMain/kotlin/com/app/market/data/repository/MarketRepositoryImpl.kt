@@ -49,6 +49,10 @@ internal class MarketRepositoryImpl(
     // 单次 downloadMeta 因版本协商最多串行发 4 个签名请求；「全部更新」不限并发会直接踩到服务端风控
     private val metadataSlots = Semaphore(MAX_CONCURRENT_METADATA_REQUESTS)
 
+    override suspend fun categoryApps(categoryId: Int, page: Int): SearchPage = withContext(Dispatchers.Default) {
+        api.categoryApps(categoryId, page)
+    }
+
     override suspend fun search(keyword: String, page: Int): SearchPage = withContext(Dispatchers.Default) {
         var result = api.search(keyword, page, profileStore.load(), cookies.cookie(), updatePrefs.currentRemoveSearchAds())
         if (updatePrefs.currentFilterQuickGames()) {

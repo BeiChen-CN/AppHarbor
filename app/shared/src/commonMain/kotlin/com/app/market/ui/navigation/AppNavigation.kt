@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.LayoutDirection
 import com.app.market.domain.model.market.AppSource
+import com.app.market.domain.model.market.MarketLink
 import com.app.market.domain.model.update.IgnoredUpdate
 import com.app.market.ui.screen.AboutScreen
 import com.app.market.ui.screen.AppDetailScreen
@@ -46,9 +47,9 @@ import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 
 @Composable
 fun AppNavigation(
-    externalDetailPackageName: String? = null,
+    externalDetailLink: MarketLink? = null,
     externalDetailQuery: String? = null,
-    onExternalDetailConsumed: (String) -> Unit = {},
+    onExternalDetailConsumed: (MarketLink) -> Unit = {},
     externalSearchKeyword: String? = null,
     onExternalSearchConsumed: (String) -> Unit = {},
     externalOpenDownloads: Boolean = false,
@@ -67,20 +68,10 @@ fun AppNavigation(
         NavSwipeDirection.LeftToRight
     }
 
-    LaunchedEffect(externalDetailPackageName, externalDetailQuery) {
-        val packageName =
-            externalDetailPackageName?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
-        val target = Route.AppDetail(
-            appId = 0L,
-            packageName = packageName,
-            displayName = packageName,
-            externalQuery = externalDetailQuery ?: "id=$packageName",
-        )
-        val current = navigator.current() as? Route.AppDetail
-        if (current?.packageName != packageName || current.externalQuery != target.externalQuery) {
-            navigator.push(target)
-        }
-        onExternalDetailConsumed(packageName)
+    LaunchedEffect(externalDetailLink, externalDetailQuery) {
+        val link = externalDetailLink ?: return@LaunchedEffect
+        navigator.openMarketLink(link, externalDetailQuery)
+        onExternalDetailConsumed(link)
     }
 
     // 外部搜索链接：先回主页面，再交由主页面切页执行
@@ -100,6 +91,7 @@ fun AppNavigation(
     }
 
     CompositionLocalProvider(LocalNavigator provides navigator) {
+        ClipboardLinkPrompt(onOpen = { navigator.openMarketLink(it) })
         NavDisplay(
             backStack = backStack,
             onBack = { navigator.pop() },
@@ -280,3 +272,25 @@ internal fun ignoredDetailRoute(entry: IgnoredUpdate, activeSource: AppSource): 
         source = activeSource,
     )
 }
+
+/**
+ * 打开商店链接对应的详情页：链接指明的来源优先，未指明时用小米。
+ * 小米详情沿用链接原有查询参数；其余来源按包名 / 站内 id 加载。
+ */
+internal fun Navigator.openMarketLink(link: MarketLink, xiaomiQuery: String? = null) {
+    if (link.packageName.isBlank() && link.storeAppId <= 0L) return
+    val source = link.source
+        ?.takeIf { link.storeAppId > 0L || it in PackageResolvableSources }
+        ?: AppSource.XIAOMI
+    val target = Route.AppDetail(
+        appId = link.storeAppId,
+        packageName = link.packageName,
+        displayName = link.packageName.ifBlank { "#${link.storeAppId}" },
+        externalQuery = if (source == AppSource.XIAOMI) xiaomiQuery ?: "id=${link.packageName}" else null,
+        source = source,
+    )
+    if (current() != target) push(target)
+}
+
+/** 仅凭包名即可加载详情的来源。 */
+private val PackageResolvableSources = setOf(AppSource.XIAOMI, AppSource.HUAWEI, AppSource.HONOR, AppSource.TAPTAP)

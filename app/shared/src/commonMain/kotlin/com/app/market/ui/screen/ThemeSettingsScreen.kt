@@ -3,6 +3,44 @@ package com.app.market.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import com.app.market.domain.model.theme.ThemeColorMode
+import com.app.market.domain.model.theme.ThemeColorSource
+import com.app.market.domain.model.theme.ThemeColorSpec
+import com.app.market.domain.model.theme.ThemePaletteStyle
+import com.app.market.resources.theme_accent_color
+import com.app.market.resources.theme_accent_default
+import com.app.market.resources.theme_amoled
+import com.app.market.resources.theme_color_spec
+import com.app.market.resources.theme_color_spec_2021
+import com.app.market.resources.theme_color_spec_2025
+import com.app.market.resources.theme_color_spec_unsupported
+import com.app.market.resources.theme_custom_color
+import com.app.market.resources.theme_dark_mode
+import com.app.market.resources.theme_dark_mode_dark
+import com.app.market.resources.theme_dark_mode_light
+import com.app.market.resources.theme_dark_mode_system
+import com.app.market.resources.theme_palette_content
+import com.app.market.resources.theme_palette_expressive
+import com.app.market.resources.theme_palette_fidelity
+import com.app.market.resources.theme_palette_fruit_salad
+import com.app.market.resources.theme_palette_monochrome
+import com.app.market.resources.theme_palette_neutral
+import com.app.market.resources.theme_palette_rainbow
+import com.app.market.resources.theme_palette_style
+import com.app.market.resources.theme_palette_tonal_spot
+import com.app.market.resources.theme_palette_vibrant
+import com.app.market.resources.theme_use_monet
+import com.app.market.ui.component.ColorPickerDialog
+import org.jetbrains.compose.resources.StringResource
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -63,6 +101,20 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
+private const val DEFAULT_SEED_COLOR = 0xFF5B7CFFL
+
+internal fun paletteStyleRes(style: ThemePaletteStyle): StringResource = when (style) {
+    ThemePaletteStyle.TONAL_SPOT -> Res.string.theme_palette_tonal_spot
+    ThemePaletteStyle.NEUTRAL -> Res.string.theme_palette_neutral
+    ThemePaletteStyle.VIBRANT -> Res.string.theme_palette_vibrant
+    ThemePaletteStyle.EXPRESSIVE -> Res.string.theme_palette_expressive
+    ThemePaletteStyle.RAINBOW -> Res.string.theme_palette_rainbow
+    ThemePaletteStyle.FRUIT_SALAD -> Res.string.theme_palette_fruit_salad
+    ThemePaletteStyle.MONOCHROME -> Res.string.theme_palette_monochrome
+    ThemePaletteStyle.FIDELITY -> Res.string.theme_palette_fidelity
+    ThemePaletteStyle.CONTENT -> Res.string.theme_palette_content
+}
+
 /** 配色模式 token → 设置项文案。 */
 @Composable
 private fun colorSchemeModeLabel(token: String): String = when (token) {
@@ -85,6 +137,12 @@ fun ThemeSettingsScreen(
         state = state,
         onBack = onBack,
         onColorSchemeMode = viewModel::setColorSchemeMode,
+        onColorMode = viewModel::setColorMode,
+        onColorSource = viewModel::setColorSource,
+        onSeedColor = viewModel::setSeedColor,
+        onPaletteStyle = viewModel::setPaletteStyle,
+        onColorSpec = viewModel::setColorSpec,
+        onAmoledDark = viewModel::setAmoledDark,
         onEnableBlur = viewModel::setEnableBlur,
         onEnableFloatingBottomBar = viewModel::setEnableFloatingBottomBar,
         onEnableFloatingBottomBarBlur = viewModel::setEnableFloatingBottomBarBlur,
@@ -102,6 +160,12 @@ private fun ThemeSettingsContent(
     state: ThemeSettingsUiState,
     onBack: () -> Unit,
     onColorSchemeMode: (String) -> Unit,
+    onColorMode: (ThemeColorMode) -> Unit,
+    onColorSource: (ThemeColorSource) -> Unit,
+    onSeedColor: (Long?) -> Unit,
+    onPaletteStyle: (ThemePaletteStyle) -> Unit,
+    onColorSpec: (ThemeColorSpec) -> Unit,
+    onAmoledDark: (Boolean) -> Unit,
     onEnableBlur: (Boolean) -> Unit,
     onEnableFloatingBottomBar: (Boolean) -> Unit,
     onEnableFloatingBottomBarBlur: (Boolean) -> Unit,
@@ -115,6 +179,7 @@ private fun ThemeSettingsContent(
     val layoutDirection = LocalLayoutDirection.current
     var sliderValue by remember(state.pageScale) { mutableFloatStateOf(state.pageScale) }
     var showScaleDialog by rememberSaveable { mutableStateOf(false) }
+    var showColorPicker by rememberSaveable { mutableStateOf(false) }
 
     MarketScaffold(
         title = stringResource(Res.string.theme),
@@ -135,19 +200,102 @@ private fun ThemeSettingsContent(
                 bottom = innerPadding.calculateBottomPadding() + PageVerticalPadding,
             ),
         ) {
-            item(key = "color-scheme") {
+            val monetEnabled = state.colorSource != ThemeColorSource.DEFAULT
+            item(key = "dark-mode") {
                 CardSegmentContainer(
                     isFirst = true,
-                    isLast = true,
+                    isLast = false,
                     horizontalPadding = 0.dp,
                 ) {
                     WindowDropdownPreference(
-                        title = stringResource(Res.string.theme_color_scheme),
-                        summary = stringResource(Res.string.theme_color_scheme_summary),
-                        items = ColorSchemeModeTokens.All.map { colorSchemeModeLabel(it) },
-                        selectedIndex = ColorSchemeModeTokens.All.indexOf(state.colorSchemeMode).coerceAtLeast(0),
-                        onSelectedIndexChange = { onColorSchemeMode(ColorSchemeModeTokens.All[it]) },
+                        title = stringResource(Res.string.theme_dark_mode),
+                        items = listOf(
+                            stringResource(Res.string.theme_dark_mode_system),
+                            stringResource(Res.string.theme_dark_mode_light),
+                            stringResource(Res.string.theme_dark_mode_dark),
+                        ),
+                        selectedIndex = ThemeColorMode.entries.indexOf(state.colorMode),
+                        onSelectedIndexChange = { index ->
+                            onColorMode(ThemeColorMode.entries[index])
+                        },
                     )
+                }
+            }
+            item(key = "amoled") {
+                CardSegmentContainer(isFirst = false, isLast = false, horizontalPadding = 0.dp) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.theme_amoled),
+                        checked = state.amoledDark,
+                        onCheckedChange = onAmoledDark,
+                    )
+                }
+            }
+            item(key = "use-monet") {
+                CardSegmentContainer(
+                    isFirst = false,
+                    isLast = !monetEnabled,
+                    horizontalPadding = 0.dp,
+                ) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.theme_use_monet),
+                        checked = monetEnabled,
+                        onCheckedChange = { on ->
+                            onColorSource(
+                                if (on) {
+                                    if (state.seedColor != null) ThemeColorSource.CUSTOM else ThemeColorSource.MONET
+                                } else {
+                                    ThemeColorSource.DEFAULT
+                                },
+                            )
+                        },
+                    )
+                }
+            }
+            if (monetEnabled) {
+                item(key = "palette-style") {
+                    CardSegmentContainer(isFirst = false, isLast = false, horizontalPadding = 0.dp) {
+                        WindowDropdownPreference(
+                            title = stringResource(Res.string.theme_palette_style),
+                            items = ThemePaletteStyle.entries.map { stringResource(paletteStyleRes(it)) },
+                            selectedIndex = ThemePaletteStyle.entries.indexOf(state.paletteStyle),
+                            onSelectedIndexChange = { index ->
+                                onPaletteStyle(ThemePaletteStyle.entries[index])
+                            },
+                        )
+                    }
+                }
+                item(key = "color-spec") {
+                    CardSegmentContainer(isFirst = false, isLast = false, horizontalPadding = 0.dp) {
+                        WindowDropdownPreference(
+                            title = stringResource(Res.string.theme_color_spec),
+                            summary = if (state.paletteStyle.supportsSpec2025) null
+                            else stringResource(Res.string.theme_color_spec_unsupported),
+                            items = listOf(
+                                stringResource(Res.string.theme_color_spec_2021),
+                                stringResource(Res.string.theme_color_spec_2025),
+                            ),
+                            selectedIndex = ThemeColorSpec.entries.indexOf(state.colorSpec),
+                            enabled = state.paletteStyle.supportsSpec2025,
+                            onSelectedIndexChange = { index ->
+                                onColorSpec(ThemeColorSpec.entries[index])
+                            },
+                        )
+                    }
+                }
+                item(key = "accent-color") {
+                    CardSegmentContainer(isFirst = false, isLast = true, horizontalPadding = 0.dp) {
+                        ArrowPreference(
+                            title = stringResource(Res.string.theme_accent_color),
+                            endActions = {
+                                Text(
+                                    text = state.seedColor?.let { "#%06X".format((it and 0xFFFFFF).toInt()) }
+                                        ?: stringResource(Res.string.theme_accent_default),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                                )
+                            },
+                            onClick = { showColorPicker = true },
+                        )
+                    }
                 }
             }
             if (blurSupported) {
@@ -269,6 +417,20 @@ private fun ThemeSettingsContent(
             onDismissRequest = { showScaleDialog = false },
             scaleProvider = { state.pageScale },
             onScaleChange = onPageScale,
+        )
+        ColorPickerDialog(
+            show = showColorPicker,
+            initialColor = Color(state.seedColor ?: DEFAULT_SEED_COLOR),
+            title = stringResource(Res.string.theme_custom_color),
+            onDismissRequest = { showColorPicker = false },
+            onConfirm = { color ->
+                showColorPicker = false
+                onSeedColor(color.toArgb().toLong() and 0xFFFFFFFFL)
+            },
+            onResetRequest = {
+                showColorPicker = false
+                onSeedColor(null)
+            },
         )
     }
 }

@@ -2,11 +2,14 @@ package com.app.market.ui.screen
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -14,18 +17,24 @@ import com.app.market.domain.model.market.AppSource
 import com.app.market.domain.model.preference.HomePage
 import com.app.market.resources.*
 import com.app.market.domain.repository.CommentSources
+import com.app.market.domain.repository.FeaturePreferences
 import com.app.market.domain.repository.RecommendationSources
 import com.app.market.domain.model.update.UpdateSources
 import com.app.market.ui.component.*
 import com.app.market.ui.util.appSourceLabel
 import com.app.market.viewmodel.InstallerSettingsViewModel
+import com.app.market.viewmodel.UpdatesUiState
 import com.app.market.viewmodel.UpdatesViewModel
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.*
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -54,6 +63,7 @@ fun SettingsTab(
     val showAppComments by updatesViewModel.showAppComments.collectAsStateWithLifecycle()
     val showSameDeveloper by updatesViewModel.showSameDeveloper.collectAsStateWithLifecycle()
     val showPromotions by updatesViewModel.showPromotions.collectAsStateWithLifecycle()
+    val detectClipboardLinks by updatesViewModel.detectClipboardLinks.collectAsStateWithLifecycle()
     val stripAppNameSubtitle by updatesViewModel.stripAppNameSubtitle.collectAsStateWithLifecycle()
     val selectedSource = AppSource.entries.firstOrNull { it in searchSources } ?: AppSource.Default.first()
     val selectedUpdateSource by updatesViewModel.updateSource.collectAsStateWithLifecycle()
@@ -61,6 +71,25 @@ fun SettingsTab(
     val searchCapabilities = selectedSource.capabilities
     var sourcePicker by remember { mutableStateOf(false) }
     var pinsPicker by remember { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+
+    val searchEntries = settingsSearchEntries(
+        features = features,
+        updatesState = updatesState,
+        showAppComments = showAppComments,
+        stripAppNameSubtitle = stripAppNameSubtitle,
+        detectClipboardLinks = detectClipboardLinks,
+        updatesViewModel = updatesViewModel,
+        onNavigateTheme = onNavigateTheme,
+        onNavigateDeviceProfile = onNavigateDeviceProfile,
+        onNavigateInstaller = onNavigateInstaller,
+        onNavigateDownloadingApps = onNavigateDownloadingApps,
+        onNavigateSavedPackages = onNavigateSavedPackages,
+        onNavigateUpdateHistory = onNavigateUpdateHistory,
+        onNavigateIgnored = onNavigateIgnored,
+        onNavigateManualUpdate = onNavigateManualUpdate,
+        onNavigateAbout = onNavigateAbout,
+    )
 
     MainTabScaffold(title = stringResource(Res.string.nav_settings)) { topPadding, backdropModifier, scrollBehavior ->
         LazyColumn(
@@ -71,6 +100,18 @@ fun SettingsTab(
                 bottom = bottomPadding + PageVerticalPadding,
             ),
         ) {
+            item(key = "settings-search") {
+                InputField(
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    onSearch = {},
+                    expanded = searchQuery.isNotBlank(),
+                    onExpandedChange = {},
+                    label = stringResource(Res.string.settings_search),
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                )
+            }
+            if (searchQuery.isBlank()) {
             settingsGroup("sources", Res.string.settings_sources_content, topPadding = 0.dp, rows = buildList {
                 add(SettingsRow("recommendations") {
                     WindowDropdownPreference(title = stringResource(Res.string.recommendation_source),
@@ -84,6 +125,12 @@ fun SettingsTab(
                         summary = stringResource(Res.string.recommendation_updates_summary),
                         checked = features.showRecommendationUpdates,
                         onCheckedChange = updatesViewModel::setShowRecommendationUpdates)
+                })
+                add(SettingsRow("clipboard-links") {
+                    SwitchPreference(title = stringResource(Res.string.clipboard_link_detect),
+                        summary = stringResource(Res.string.clipboard_link_detect_summary),
+                        checked = detectClipboardLinks,
+                        onCheckedChange = updatesViewModel::setDetectClipboardLinks)
                 })
                 add(SettingsRow("search") {
                     WindowDropdownPreference(title = stringResource(Res.string.search_sources),
@@ -234,6 +281,29 @@ fun SettingsTab(
                     ArrowPreference(title = stringResource(Res.string.about), summary = stringResource(Res.string.about_summary), onClick = onNavigateAbout)
                 },
             ))
+            } else {
+                val query = searchQuery.trim()
+                val entries = searchEntries.filter { entry ->
+                    entry.title.contains(query, ignoreCase = true) ||
+                        entry.summary?.contains(query, ignoreCase = true) == true
+                }
+                if (entries.isEmpty()) {
+                    item(key = "settings-search-empty") {
+                        Text(
+                            text = stringResource(Res.string.settings_search_no_results),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 32.dp),
+                            color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                } else {
+                    itemsIndexed(entries, key = { index, entry -> "search-$index-${entry.title}" }) { index, entry ->
+                        CardSegmentContainer(isFirst = index == 0, isLast = index == entries.lastIndex) {
+                            SettingsSearchRow(entry)
+                        }
+                    }
+                }
+            }
         }
     }
     if (sourcePicker) AggregateSourcesDialog(features.aggregateSources, updatesViewModel::setAggregateSources, { sourcePicker = false })
@@ -241,6 +311,136 @@ fun SettingsTab(
 }
 
 private data class SettingsRow(val key: String, val content: @Composable () -> Unit)
+
+private sealed interface SettingsSearchEntry {
+    val title: String
+    val summary: String?
+
+    data class Switch(
+        override val title: String,
+        override val summary: String?,
+        val checked: Boolean,
+        val onChecked: (Boolean) -> Unit,
+    ) : SettingsSearchEntry
+
+    data class Dropdown(
+        override val title: String,
+        override val summary: String?,
+        val items: List<String>,
+        val selectedIndex: Int,
+        val onSelect: (Int) -> Unit,
+    ) : SettingsSearchEntry
+
+    data class Link(
+        override val title: String,
+        override val summary: String?,
+        val onClick: () -> Unit,
+    ) : SettingsSearchEntry
+}
+
+@Composable
+private fun SettingsSearchRow(entry: SettingsSearchEntry) {
+    when (entry) {
+        is SettingsSearchEntry.Switch -> SwitchPreference(
+            title = entry.title,
+            summary = entry.summary,
+            checked = entry.checked,
+            onCheckedChange = entry.onChecked,
+        )
+
+        is SettingsSearchEntry.Dropdown -> OverlayDropdownPreference(
+            items = entry.items,
+            selectedIndex = entry.selectedIndex.coerceAtLeast(0),
+            title = entry.title,
+            summary = entry.summary,
+            onSelectedIndexChange = entry.onSelect,
+        )
+
+        is SettingsSearchEntry.Link -> ArrowPreference(
+            title = entry.title,
+            summary = entry.summary,
+            onClick = entry.onClick,
+        )
+    }
+}
+
+@Composable
+private fun settingsSearchEntries(
+    features: FeaturePreferences,
+    updatesState: UpdatesUiState,
+    showAppComments: Boolean,
+    stripAppNameSubtitle: Boolean,
+    detectClipboardLinks: Boolean,
+    updatesViewModel: UpdatesViewModel,
+    onNavigateTheme: () -> Unit,
+    onNavigateDeviceProfile: () -> Unit,
+    onNavigateInstaller: () -> Unit,
+    onNavigateDownloadingApps: () -> Unit,
+    onNavigateSavedPackages: () -> Unit,
+    onNavigateUpdateHistory: () -> Unit,
+    onNavigateIgnored: () -> Unit,
+    onNavigateManualUpdate: () -> Unit,
+    onNavigateAbout: () -> Unit,
+): List<SettingsSearchEntry> = listOf(
+    SettingsSearchEntry.Link(stringResource(Res.string.theme), stringResource(Res.string.theme_summary), onNavigateTheme),
+    SettingsSearchEntry.Link(stringResource(Res.string.device_profile), stringResource(Res.string.device_profile_summary), onNavigateDeviceProfile),
+    SettingsSearchEntry.Link(stringResource(Res.string.installer_section), stringResource(Res.string.installer_section_summary), onNavigateInstaller),
+    SettingsSearchEntry.Link(stringResource(Res.string.downloading_apps), stringResource(Res.string.downloading_apps_summary), onNavigateDownloadingApps),
+    SettingsSearchEntry.Link(stringResource(Res.string.saved_packages), stringResource(Res.string.saved_packages_summary), onNavigateSavedPackages),
+    SettingsSearchEntry.Link(stringResource(Res.string.update_history), stringResource(Res.string.update_history_summary), onNavigateUpdateHistory),
+    SettingsSearchEntry.Link(stringResource(Res.string.ignored_apps), stringResource(Res.string.ignored_apps_summary), onNavigateIgnored),
+    SettingsSearchEntry.Link(stringResource(Res.string.manual_update), stringResource(Res.string.manual_update_summary), onNavigateManualUpdate),
+    SettingsSearchEntry.Link(stringResource(Res.string.about), stringResource(Res.string.about_summary), onNavigateAbout),
+    SettingsSearchEntry.Switch(
+        stringResource(Res.string.recommendation_updates),
+        stringResource(Res.string.recommendation_updates_summary),
+        features.showRecommendationUpdates,
+        updatesViewModel::setShowRecommendationUpdates,
+    ),
+    SettingsSearchEntry.Switch(
+        stringResource(Res.string.clipboard_link_detect),
+        stringResource(Res.string.clipboard_link_detect_summary),
+        detectClipboardLinks,
+        updatesViewModel::setDetectClipboardLinks,
+    ),
+    SettingsSearchEntry.Switch(
+        stringResource(Res.string.show_app_comments),
+        stringResource(Res.string.show_app_comments_summary),
+        showAppComments,
+        updatesViewModel::setShowAppComments,
+    ),
+    SettingsSearchEntry.Switch(
+        stringResource(Res.string.only_unmetered_downloads),
+        stringResource(Res.string.only_unmetered_downloads_summary),
+        features.onlyUnmeteredDownloads,
+        updatesViewModel::setOnlyUnmeteredDownloads,
+    ),
+    SettingsSearchEntry.Switch(
+        stringResource(Res.string.aggregate_updates),
+        stringResource(Res.string.aggregate_updates_summary),
+        features.aggregateUpdates,
+        updatesViewModel::setAggregateUpdates,
+    ),
+    SettingsSearchEntry.Switch(
+        stringResource(Res.string.show_system_apps),
+        stringResource(Res.string.show_system_apps_summary),
+        updatesState.showSystemUpdates,
+        updatesViewModel::setShowSystemUpdates,
+    ),
+    SettingsSearchEntry.Switch(
+        stringResource(Res.string.strip_name_subtitle),
+        stringResource(Res.string.strip_name_subtitle_summary),
+        stripAppNameSubtitle,
+        updatesViewModel::setStripAppNameSubtitle,
+    ),
+    SettingsSearchEntry.Dropdown(
+        stringResource(Res.string.recommendation_source),
+        stringResource(Res.string.recommendation_source_summary),
+        RecommendationSources.map { appSourceLabel(it) },
+        RecommendationSources.indexOf(features.recommendationSource),
+        { updatesViewModel.setRecommendationSource(RecommendationSources[it]) },
+    ),
+)
 
 private fun LazyListScope.settingsGroup(key: String, title: StringResource, topPadding: Dp = 20.dp, rows: List<SettingsRow>) {
     item("$key-title") { SectionTitle(stringResource(title), topPadding = topPadding) }

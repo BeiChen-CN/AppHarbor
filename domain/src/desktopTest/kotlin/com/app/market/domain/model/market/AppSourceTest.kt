@@ -14,7 +14,7 @@ class AppSourceTest {
         assertFalse(AppSource.TENCENT.capabilities.supportsTodayFeed)
         assertFalse(AppSource.TENCENT.capabilities.supportsHistoricalVersions)
         assertFalse(AppSource.TENCENT.capabilities.supportsDeltaUpdates)
-        assertFalse(AppSource.TENCENT.capabilities.supportsComments)
+        assertTrue(AppSource.TENCENT.capabilities.supportsComments)
     }
 
     @Test
@@ -35,7 +35,7 @@ class AppSourceTest {
 
     @Test
     fun capabilitiesMatchRoutingContract() {
-        // 评论 / 同开发者应用目前只有小米与 OPPO 支持
+        // 评论：小米 / 好游快爆 / 应用汇 / 应用宝 / TapTap
         assertTrue(AppSource.XIAOMI.capabilities.supportsComments)
         assertTrue(AppSource.XIAOMI.capabilities.supportsSameDeveloperApps)
         assertTrue(AppSource.OPPO.capabilities.supportsComments)
