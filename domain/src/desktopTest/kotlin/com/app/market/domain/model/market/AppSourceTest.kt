@@ -53,6 +53,7 @@ class AppSourceTest {
         assertTrue(AppSource.OPPO.capabilities.supportsSameDeveloperApps)
         assertFalse(AppSource.VIVO.capabilities.supportsComments)
         assertFalse(AppSource.WANDOUJIA.capabilities.supportsComments)
+        assertTrue(AppSource.APPCHINA.capabilities.supportsUpdates)
         assertFalse(AppSource.SAMSUNG.capabilities.supportsComments)
         assertFalse(AppSource.HUAWEI.capabilities.supportsComments)
 

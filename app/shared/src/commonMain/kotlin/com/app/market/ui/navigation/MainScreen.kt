@@ -214,7 +214,8 @@ fun MainPage(
                     val viewModel = koinViewModel<DiscoveryViewModel>()
                     DiscoveryTab(viewModel, bottomPadding, openDetail,
                         updatesViewModel = updatesViewModel.takeIf { appManagementSupported },
-                        onViewUpdates = { tabs.indexOf(MainTab.Updates).takeIf { it >= 0 }?.let(mainPagerState::animateToPage) })
+                        onViewUpdates = { tabs.indexOf(MainTab.Updates).takeIf { it >= 0 }?.let(mainPagerState::animateToPage) },
+                        onOpenSearch = onSearchTabClick)
                 }
 
                 MainTab.Category -> {

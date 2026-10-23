@@ -131,8 +131,8 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             reportsDeltaSize = false,
             supportsTodayFeed = false,
             todayFullCoverOverlay = false,
-            // 网页渠道无原生批量更新协议，更新下载与手动更新均回退小米
-            supportsUpdates = false,
+            // 无原生批量接口，逐包搜索应用汇搜索结果中的 versionCode 做更新比对
+            supportsUpdates = true,
             supportsHistoricalVersions = true,
         ),
     ),

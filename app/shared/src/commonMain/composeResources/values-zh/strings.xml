@@ -349,7 +349,6 @@
     <string name="comments_section">用户评论</string>
     <string name="recommendations_refresh_failed">刷新失败，仍显示上次的推荐内容</string>
     <string name="recommendations_load_failed">推荐加载失败</string>
-    <string name="feed_refresh">刷新</string>
     <string name="settings_updates_install">更新与安装</string>
     <string name="pinned_sources_remove_hint">点击应用可恢复自动选择更新来源</string>
     <string name="pull_refresh">下拉刷新</string>

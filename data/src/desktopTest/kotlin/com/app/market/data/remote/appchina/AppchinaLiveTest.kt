@@ -1,6 +1,11 @@
 package com.app.market.data.remote.appchina
 
+import com.app.market.data.repository.AppchinaRepositoryImpl
+import com.app.market.domain.model.installed.InstalledPackage
 import com.app.market.domain.model.market.AppSource
+import com.app.market.domain.model.update.ManualUpdateRequest
+import com.app.market.domain.model.update.ManualUpdateStatus
+import com.app.market.domain.repository.InstalledPackagesRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.runBlocking
@@ -34,6 +39,15 @@ class AppchinaLiveTest {
             assertTrue(meta.size > 0L)
             assertEquals(AppSource.APPCHINA, meta.source)
             println("appchina: ${detail.packageName} ${detail.versionName} (${detail.versionCode}), ${meta.size} bytes")
+
+            val repository = AppchinaRepositoryImpl(api, InstalledPackagesRepository {
+                listOf(InstalledPackage("com.tencent.mm", versionCode = 1, isSystemApp = false, versionName = "old"))
+            })
+            val updates = repository.checkUpdates()
+            assertTrue(updates.any { it.packageName == "com.tencent.mm" })
+            assertEquals(ManualUpdateStatus.UPDATE_AVAILABLE,
+                repository.checkManualUpdate(ManualUpdateRequest("com.tencent.mm", 1)).status)
+            println("appchina update: ${updates.first().versionName} (${updates.first().versionCode})")
 
             val comments = api.appComments(detail)
             assertTrue(comments.items.isNotEmpty())

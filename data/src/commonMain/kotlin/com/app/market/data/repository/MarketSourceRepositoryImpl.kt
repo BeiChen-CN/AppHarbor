@@ -202,8 +202,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.WANDOUJIA -> market.downloadUpdateMeta(app.onXiaomi())
         // 好游快爆网页渠道不暴露版本号，同样回退小米
         AppSource.KUAIBAO -> market.downloadUpdateMeta(app.onXiaomi())
-        // 应用汇无原生批量更新协议，更新下载回退小米
-        AppSource.APPCHINA -> market.downloadUpdateMeta(app.onXiaomi())
+        AppSource.APPCHINA -> appchina.downloadMeta(app)
         AppSource.BOX7723 -> market.downloadUpdateMeta(app.onXiaomi())
         AppSource.OPPO -> oppo.downloadUpdateMeta(app)
         AppSource.SAMSUNG -> samsung.downloadUpdateMeta(app)
@@ -234,8 +233,7 @@ internal class MarketSourceRepositoryImpl(
         AppSource.TAPTAP -> flow { emit(tapTap.checkUpdates()) }
         // 好游快爆无更新协议；能力声明已保证不会作为更新来源被选中
         AppSource.KUAIBAO -> flow { emit(emptyList()) }
-        // 应用汇无原生批量更新协议；能力声明已保证不会作为更新来源被选中
-        AppSource.APPCHINA -> flow { emit(emptyList()) }
+        AppSource.APPCHINA -> flow { emit(appchina.checkUpdates()) }
         AppSource.BOX7723 -> flow { emit(emptyList()) }
         // P2 起通过仓库索引做本地比对，首次调用会触发索引同步（约 20MB gzip）
         AppSource.FDROID -> flow { emit(fdroid.checkUpdates()) }
@@ -254,7 +252,7 @@ internal class MarketSourceRepositoryImpl(
             // 豌豆荚无原生手动更新协议，回退小米商店解析
             AppSource.WANDOUJIA -> market.checkManualUpdate(request)
             AppSource.KUAIBAO -> market.checkManualUpdate(request)
-            AppSource.APPCHINA -> market.checkManualUpdate(request)
+            AppSource.APPCHINA -> appchina.checkManualUpdate(request)
             AppSource.BOX7723 -> market.checkManualUpdate(request)
             AppSource.OPPO -> oppo.checkManualUpdate(request)
             AppSource.SAMSUNG -> samsung.checkManualUpdate(request)

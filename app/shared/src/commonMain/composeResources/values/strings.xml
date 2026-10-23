@@ -348,7 +348,6 @@
     <string name="comments_section">Comments</string>
     <string name="recommendations_refresh_failed">Refresh failed. Previous recommendations are still available.</string>
     <string name="recommendations_load_failed">Unable to load recommendations</string>
-    <string name="feed_refresh">Refresh</string>
     <string name="settings_updates_install">Updates and installation</string>
     <string name="pinned_sources_remove_hint">Tap an app to restore automatic source selection.</string>
     <string name="pull_refresh">Pull down to refresh</string>

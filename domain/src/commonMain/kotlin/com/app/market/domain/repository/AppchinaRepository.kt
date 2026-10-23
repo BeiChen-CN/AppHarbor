@@ -7,6 +7,8 @@ import com.app.market.domain.model.market.HistoricalVersion
 import com.app.market.domain.model.market.HistoricalVersionPage
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.SearchPage
+import com.app.market.domain.model.update.ManualUpdateRequest
+import com.app.market.domain.model.update.ManualUpdateResult
 
 /** 应用汇网页匿名只读接入：搜索、详情、当前版本与历史版本下载。 */
 interface AppchinaRepository {
@@ -16,4 +18,6 @@ interface AppchinaRepository {
     suspend fun downloadMeta(app: MarketAppInfo): DownloadMeta
     suspend fun historicalVersions(appId: Long, packageName: String, offset: Int = 0): HistoricalVersionPage
     fun historicalDownloadMeta(version: HistoricalVersion): DownloadMeta
+    suspend fun checkUpdates(): List<MarketAppInfo>
+    suspend fun checkManualUpdate(request: ManualUpdateRequest): ManualUpdateResult
 }
