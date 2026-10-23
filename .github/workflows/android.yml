@@ -105,11 +105,11 @@ jobs:
           - target: windows-x64
             os: windows-latest
             artifact-pattern: app/desktop/build/compose/binaries/main-release/msi/*.msi
-            artifact-name: appharbor-desktop-windows
+            artifact-name: tessera-desktop-windows
           - target: linux-x64
             os: ubuntu-latest
             artifact-pattern: app/desktop/build/compose/binaries/main-release/deb/*.deb
-            artifact-name: appharbor-desktop-linux
+            artifact-name: tessera-desktop-linux
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7

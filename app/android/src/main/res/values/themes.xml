@@ -5,7 +5,7 @@
     </style>
 
     <style name="AppTheme.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@android:color/background_light</item>
+        <item name="windowSplashScreenBackground">#F1EEE7</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>

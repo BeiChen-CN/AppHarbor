@@ -77,7 +77,7 @@ internal class ReleaseApi(private val client: HttpClient) {
 
     private suspend fun get(url: String, configure: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {}): JsonElement? {
         val response = client.get(url) {
-            header(HttpHeaders.UserAgent, "AppHarbor")
+            header(HttpHeaders.UserAgent, "Tessera")
             header(HttpHeaders.Accept, "application/json")
             configure()
         }

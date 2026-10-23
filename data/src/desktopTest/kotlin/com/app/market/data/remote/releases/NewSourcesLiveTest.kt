@@ -30,7 +30,7 @@ class NewSourcesLiveTest {
     @Test
     fun publicRepositoriesAndIzzyResolveThroughActualSourceGraph() = runBlocking {
         assumeTrue(System.getenv("APP_MARKET_LIVE_NEW_SOURCES") == "1")
-        val root = Files.createTempDirectory("appharbor-izzy-live-").toFile()
+        val root = Files.createTempDirectory("tessera-izzy-live-").toFile()
         val graph = koinApplication {
             modules(dataModules + module {
                 single<PreferencesDataSource> { LiveSourcePreferences() }

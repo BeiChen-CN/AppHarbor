@@ -18,7 +18,7 @@ internal class StandardInstallerBackend(
         if (!hasPrivilegedPermission && !context.packageManager.canRequestPackageInstalls()) {
             throw InstallPipelineException(
                 InstallFailureCode.UNKNOWN_SOURCES_PERMISSION,
-                "Allow AppHarbor to install unknown apps before continuing",
+                "Allow Tessera to install unknown apps before continuing",
             )
         }
         return PackageInstallerAccess(

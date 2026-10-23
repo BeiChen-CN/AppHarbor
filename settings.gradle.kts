@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "AppHarbor"
+rootProject.name = "Tessera"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

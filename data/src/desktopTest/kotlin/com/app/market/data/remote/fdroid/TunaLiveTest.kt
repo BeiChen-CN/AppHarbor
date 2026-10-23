@@ -23,7 +23,7 @@ class TunaLiveTest {
     @Test
     fun mirrorResolvesThroughSourceGraph() = runBlocking {
         assumeTrue(System.getenv("APP_MARKET_LIVE_TUNA") == "1")
-        val root = Files.createTempDirectory("appharbor-tuna-live-").toFile()
+        val root = Files.createTempDirectory("tessera-tuna-live-").toFile()
         val graph = koinApplication {
             modules(dataModules + module {
                 single<FdroidIndexCache>(named("tuna")) { JvmFdroidIndexCache(root, get(), TunaApiConfig) }
