@@ -16,7 +16,7 @@ import kotlin.test.assertFails
 import kotlin.test.assertTrue
 
 class ReleaseApkInspectorTest {
-    private val manifest: ByteArray get() = requireNotNull(javaClass.getResourceAsStream("/releases/tessera-manifest.axml")).use { it.readBytes() }
+    private val manifest: ByteArray get() = requireNotNull(javaClass.getResourceAsStream("/releases/trove-manifest.axml")).use { it.readBytes() }
 
     @Test
     fun readsActualBinaryManifestInsteadOfReleaseTag() {

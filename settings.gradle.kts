@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "Tessera"
+rootProject.name = "Trove"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

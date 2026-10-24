@@ -62,7 +62,7 @@ internal class LsposedApi(private val client: HttpClient) {
 
     private companion object {
         const val BASE = "https://modules.lsposed.org"
-        const val USER_AGENT = "Tessera (LSPosed module source)"
+        const val USER_AGENT = "Trove (LSPosed module source)"
         const val INDEX_TTL_MILLIS = 10 * 60_000L
         val PACKAGE_NAME = Regex("[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+")
     }
