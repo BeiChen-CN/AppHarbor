@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Tessera</string>
+    <string name="desktop_window_title">Tessera</string>
 
     <!-- Navigation -->
     <string name="nav_today">Today</string>

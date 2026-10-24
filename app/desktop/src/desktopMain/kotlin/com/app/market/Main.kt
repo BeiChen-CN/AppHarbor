@@ -23,7 +23,7 @@ import com.app.market.di.uiPlatformModule
 import com.app.market.di.viewModelModule
 import com.app.market.platform.setupImageLoader
 import com.app.market.resources.Res
-import com.app.market.resources.app_name
+import com.app.market.resources.desktop_window_title
 import com.app.market.resources.ic_launcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -51,7 +51,7 @@ fun main() {
                 runCatching { koinApplication.koin.get<CoroutineScope>().cancel() }
                 exitApplication()
             },
-            title = stringResource(Res.string.app_name),
+            title = stringResource(Res.string.desktop_window_title),
             icon = windowIcon,
         ) {
             App()
