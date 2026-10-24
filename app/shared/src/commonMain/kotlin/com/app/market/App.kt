@@ -160,7 +160,13 @@ fun App(
                 paletteStyle = miuixPalette,
                 colorSpec = miuixSpec,
             )
-            ThemeColorSource.MONET, ThemeColorSource.CUSTOM -> ThemeController(
+            // Monet 必须让 MIUIX 读取系统壁纸；传入固定 keyColor 会绕过 platformDynamicColors。
+            ThemeColorSource.MONET -> ThemeController(
+                colorSchemeMode = monetMode,
+                paletteStyle = miuixPalette,
+                colorSpec = miuixSpec,
+            )
+            ThemeColorSource.CUSTOM -> ThemeController(
                 colorSchemeMode = monetMode,
                 keyColor = Color(seedColor ?: DEFAULT_SEED_COLOR),
                 paletteStyle = miuixPalette,
