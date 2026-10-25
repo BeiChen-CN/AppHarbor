@@ -261,6 +261,21 @@
     <string name="about_author_name">Author: %1$s</string>
     <string name="about_project">Project</string>
     <string name="about_github">GitHub repository</string>
+    <string name="app_update_check">Check for updates</string>
+    <string name="app_update_checking">Checking…</string>
+    <string name="app_update_current">Current version %1$s (%2$d)</string>
+    <string name="app_update_available_title">Update available</string>
+    <string name="app_update_latest_title">You're up to date</string>
+    <string name="app_update_up_to_date">Trove %1$s (%2$d) is the latest version.</string>
+    <string name="app_update_latest">Latest version %1$s (%2$d)</string>
+    <string name="app_update_size">Download size: %1$s</string>
+    <string name="app_update_changelog">Release notes</string>
+    <string name="app_update_later">Later</string>
+    <string name="app_update_install">Download and install</string>
+    <string name="app_update_open_release">Open release page</string>
+    <string name="app_update_started">Update download started</string>
+    <string name="app_update_failed_title">Update check failed</string>
+    <string name="app_update_error_fallback">Could not check for updates</string>
     <string name="about_open_source_licenses">Open source licenses</string>
 
     <!-- Update history -->

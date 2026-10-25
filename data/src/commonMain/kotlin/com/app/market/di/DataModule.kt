@@ -41,6 +41,7 @@ import com.app.market.data.remote.xiaomi.XiaomiApi
 import com.app.market.data.remote.xiaomi.XiaomiClient
 import com.app.market.data.remote.xiaomi.XiaomiHttpClient
 import com.app.market.data.repository.AnonymousAccountRepositoryImpl
+import com.app.market.data.repository.AppUpdateRepositoryImpl
 import com.app.market.data.repository.FdroidRepositoryImpl
 import com.app.market.data.repository.HonorRepositoryImpl
 import com.app.market.data.repository.HuaweiRepositoryImpl
@@ -60,6 +61,7 @@ import com.app.market.data.store.ThemePreferencesRepositoryImpl
 import com.app.market.data.store.UpdateHistoryRepositoryImpl
 import com.app.market.data.store.UpdatePreferencesRepositoryImpl
 import com.app.market.domain.repository.AccountRepository
+import com.app.market.domain.repository.AppUpdateRepository
 import com.app.market.domain.repository.DownloadRepository
 import com.app.market.domain.repository.FdroidRepository
 import com.app.market.domain.repository.HonorRepository
@@ -121,6 +123,7 @@ private val commonDataModule = module {
     singleOf(::UpdateHistoryRepositoryImpl) { bind<UpdateHistoryRepository>() }
 
     singleOf(::AnonymousAccountRepositoryImpl) { bind<AccountRepository>() }
+    singleOf(::AppUpdateRepositoryImpl) { bind<AppUpdateRepository>() }
     singleOf(::UpdateInfoCache)
     singleOf(::XiaomiClient)
     singleOf(::XiaomiHttpClient)

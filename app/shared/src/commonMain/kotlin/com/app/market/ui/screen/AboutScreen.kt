@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -54,16 +55,26 @@ import com.app.market.resources.about_open_source_licenses
 import com.app.market.resources.about_project
 import com.app.market.resources.about_title
 import com.app.market.resources.app_name
+import com.app.market.resources.app_update_check
+import com.app.market.resources.app_update_checking
+import com.app.market.resources.app_update_current
+import com.app.market.resources.app_update_started
 import com.app.market.resources.back
 import com.app.market.resources.ic_launcher
+import com.app.market.ui.component.AppUpdateDialog
 import com.app.market.ui.component.SectionTitle
 import com.app.market.ui.component.blur.BlurredBar
 import com.app.market.ui.component.blur.ColorBlendToken
 import com.app.market.ui.component.blur.rememberBlurBackdrop
 import com.app.market.ui.component.blur.rememberBlurEnabled
 import com.app.market.ui.component.effect.BgEffectBackground
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.app.market.platform.UiPlatform
+import com.app.market.viewmodel.AppUpdateViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -93,6 +104,16 @@ fun AboutScreen(
     onBack: () -> Unit = {},
     onOpenUrl: (String) -> Unit = {},
 ) {
+    val updateViewModel = koinViewModel<AppUpdateViewModel>()
+    val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
+    val uiPlatform = koinInject<UiPlatform>()
+    val updateStartedText = stringResource(Res.string.app_update_started)
+    LaunchedEffect(updateState.started) {
+        if (updateState.started) {
+            uiPlatform.showToast(updateStartedText)
+            updateViewModel.consumeStarted()
+        }
+    }
     val scrollBehavior = MiuixScrollBehavior()
     val lazyListState = rememberLazyListState()
     // 视差进度逐帧变化：只以 State 传递，读取下沉到顶栏槽位与 graphicsLayer
@@ -152,9 +173,22 @@ fun AboutScreen(
                 scrollBehavior = scrollBehavior,
                 lazyListState = lazyListState,
                 scrollProgress = scrollProgress,
+                checkingUpdate = updateState.checking,
+                onCheckUpdate = updateViewModel::check,
                 onOpenUrl = onOpenUrl,
             )
         }
+    }
+    if (updateState.dialogVisible) {
+        AppUpdateDialog(
+            update = updateState.update,
+            upToDate = updateState.upToDate,
+            error = updateState.error,
+            installSupported = uiPlatform.packageInstallationSupported,
+            onDismiss = updateViewModel::dismiss,
+            onInstall = updateViewModel::startUpdate,
+            onOpenRelease = onOpenUrl,
+        )
     }
 }
 
@@ -164,6 +198,8 @@ private fun AboutContent(
     scrollBehavior: ScrollBehavior,
     lazyListState: LazyListState,
     scrollProgress: State<Float>,
+    checkingUpdate: Boolean,
+    onCheckUpdate: () -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     val layoutDirection = LocalLayoutDirection.current
@@ -360,9 +396,22 @@ private fun AboutContent(
                         ),
                     ) {
                         ArrowPreference(
+                            title = stringResource(Res.string.app_update_check),
+                            summary = if (checkingUpdate) {
+                                stringResource(Res.string.app_update_checking)
+                            } else {
+                                stringResource(
+                                    Res.string.app_update_current,
+                                    misc.VersionInfo.VERSION_NAME,
+                                    misc.VersionInfo.VERSION_CODE,
+                                )
+                            },
+                            onClick = onCheckUpdate,
+                        )
+                        ArrowPreference(
                             title = stringResource(Res.string.about_github),
-                            summary = "github.com/BeiChen-CN/AppMarket",
-                            onClick = { onOpenUrl("https://github.com/BeiChen-CN/AppMarket") },
+                            summary = "github.com/BeiChen-CN/AppHarbor",
+                            onClick = { onOpenUrl("https://github.com/BeiChen-CN/AppHarbor") },
                         )
                     }
 
