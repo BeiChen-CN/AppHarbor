@@ -35,6 +35,18 @@ import com.app.market.data.remote.vivo.VivoApi
 import com.app.market.data.remote.vivo.VivoAuroraApi
 import com.app.market.data.remote.vivo.VivoUpdateApi
 import com.app.market.data.remote.wandoujia.WandoujiaApi
+import com.app.market.data.remote.shoudji.ShoudjiApi
+import com.app.market.data.remote.shoudji.ShoudjiApiConfig
+import com.app.market.data.remote.x360.X360Api
+import com.app.market.data.remote.x360.X360ApiConfig
+import com.app.market.data.remote.hais.HaisApi
+import com.app.market.data.remote.hais.HaisApiConfig
+import com.app.market.data.repository.ShoudjiRepositoryImpl
+import com.app.market.data.repository.X360RepositoryImpl
+import com.app.market.data.repository.HaisRepositoryImpl
+import com.app.market.domain.repository.ShoudjiRepository
+import com.app.market.domain.repository.X360Repository
+import com.app.market.domain.repository.HaisRepository
 import com.app.market.data.remote.wandoujia.WandoujiaApiConfig
 import com.app.market.data.remote.xiaomi.UpdateInfoCache
 import com.app.market.data.remote.xiaomi.XiaomiApi
@@ -95,6 +107,9 @@ import org.koin.core.qualifier.named
 import com.app.market.data.repository.ReleaseSourceRepository
 import com.app.market.data.remote.lsposed.LsposedApi
 import com.app.market.data.remote.releases.ReleaseApi
+import com.app.market.data.remote.releases.GithubTokenHolder
+import com.app.market.data.store.ReleaseTokenRepositoryImpl
+import com.app.market.domain.repository.ReleaseTokenRepository
 import com.app.market.data.repository.LsposedRepository
 import com.app.market.data.remote.fdroid.IzzyApiConfig
 import com.app.market.data.remote.fdroid.TunaApiConfig
@@ -168,7 +183,9 @@ private val commonDataModule = module {
     single<FdroidRepository>(named("izzy")) { FdroidRepositoryImpl(get(named("izzy")), get()) }
     single(named("tuna")) { FdroidApi(get(), TunaApiConfig, get(named("tuna"))) }
     single<FdroidRepository>(named("tuna")) { FdroidRepositoryImpl(get(named("tuna")), get()) }
-    singleOf(::ReleaseApi)
+    single { GithubTokenHolder() }
+    single { ReleaseApi(get(), get()) }
+    singleOf(::ReleaseTokenRepositoryImpl) { bind<ReleaseTokenRepository>() }
     single { ReleaseSourceRepository(get(), get(), get(), get(), get<com.app.market.data.remote.xiaomi.platform.DeviceDefaultsDataSource>().current().cpuArchitecture) }
     singleOf(::LsposedApi)
     single { LsposedRepository(get(), get(), get(), get<com.app.market.data.remote.xiaomi.platform.DeviceDefaultsDataSource>().current().cpuArchitecture) }
@@ -179,12 +196,22 @@ private val commonDataModule = module {
     single { CoolapkSigner() }
     single { CoolapkApi(get(), get(), get()) } onClose { it?.close() }
     singleOf(::CoolapkRepositoryImpl) { bind<CoolapkRepository>() }
+    single { X360ApiConfig() }
+    singleOf(::X360Api)
+    singleOf(::X360RepositoryImpl) { bind<X360Repository>() }
+    single { ShoudjiApiConfig() }
+    singleOf(::ShoudjiApi)
+    singleOf(::ShoudjiRepositoryImpl) { bind<ShoudjiRepository>() }
+    single { HaisApiConfig() }
+    singleOf(::HaisApi)
+    singleOf(::HaisRepositoryImpl) { bind<HaisRepository>() }
     single<MarketSourceRepository> {
         MarketSourceRepositoryImpl(
             market = get(), today = get(), vivo = get(), wandoujia = get(), oppo = get(),
             samsung = get(), honor = get(), huawei = get(), tapTap = get(), kuaibao = get(), appchina = get(), box7723 = get(),
             fdroid = get(), coolapk = get(), tencent = get(), izzy = get(named("izzy")), releases = get(),
             lsposed = get(), tuna = get(named("tuna")),
+            x360 = get(), shoudji = get(), hais = get(),
         )
     }
 

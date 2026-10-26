@@ -51,6 +51,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.preference.HomePage
+import com.app.market.domain.repository.MainTabId
 import com.app.market.domain.repository.ThemePreferencesRepository
 import com.app.market.platform.UiPlatform
 import com.app.market.resources.Res
@@ -108,7 +109,14 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
 // 主页签集合按平台能力裁剪：桌面端（无法扫描已装应用 / 安装）不含「更新」。
-private enum class MainTab { Recommendations, Category, Updates, Search, Settings }
+// 用户的隐藏开关落在 [MainTabId]，UI 枚举只做能力映射。
+private enum class MainTab(val id: MainTabId) {
+    Recommendations(MainTabId.RECOMMENDATIONS),
+    Category(MainTabId.CATEGORY),
+    Updates(MainTabId.UPDATES),
+    Search(MainTabId.SEARCH),
+    Settings(MainTabId.SETTINGS),
+}
 
 @Composable
 fun MainPage(
@@ -125,17 +133,22 @@ fun MainPage(
     val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
     val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
     val updatesState by updatesViewModel.uiState.collectAsStateWithLifecycle()
+    val featureSettings by updatesViewModel.featureSettings.collectAsStateWithLifecycle()
     val appManagementSupported = uiPlatform.packageInstallationSupported
-    val tabs = remember(appManagementSupported) {
+    // 先按平台能力裁剪（桌面端无「更新」），再叠加用户自定义隐藏，并保证至少留下一个页签。
+    val tabs = remember(appManagementSupported, featureSettings.hiddenMainTabs) {
         buildList {
             add(MainTab.Recommendations)
             add(MainTab.Category)
             if (appManagementSupported) add(MainTab.Updates)
             add(MainTab.Search)
             add(MainTab.Settings)
-        }
+        }.filterNot { it.id in featureSettings.hiddenMainTabs }
+            .ifEmpty { listOf(MainTab.Recommendations) }
     }
     val searchPage = tabs.indexOf(MainTab.Search)
+    // 「搜索」可能被隐藏：待处理关键词与焦点请求都改走这个安全的落点。
+    val searchTargetPage = searchPage.takeIf { it >= 0 } ?: 0
     fun homeIndexOf(page: HomePage): Int =
         tabs.indexOf(page.toTab()).takeIf { it >= 0 } ?: 0
 
@@ -152,10 +165,10 @@ fun MainPage(
     var notificationPermissionRequested by remember { mutableStateOf(false) }
     var searchFocusRequestId by remember { mutableIntStateOf(0) }
     val onSearchTabClick = {
-        if (selectedPage == searchPage && !mainPagerState.isNavigating) {
+        if (selectedPage == searchTargetPage && !mainPagerState.isNavigating) {
             searchFocusRequestId += 1
         } else {
-            mainPagerState.animateToPage(searchPage)
+            mainPagerState.animateToPage(searchTargetPage)
         }
     }
     val onTabClick: (Int, MainTab) -> Unit = { index, tab ->
@@ -173,7 +186,7 @@ fun MainPage(
 
     LaunchedEffect(pendingSearchKeyword) {
         val keyword = pendingSearchKeyword ?: return@LaunchedEffect
-        mainPagerState.animateToPage(searchPage)
+        mainPagerState.animateToPage(searchTargetPage)
         if (keyword.isNotEmpty()) searchViewModel.searchWith(keyword) else searchFocusRequestId += 1
         onPendingSearchConsumed()
     }
@@ -233,7 +246,7 @@ fun MainPage(
                     viewModel = searchViewModel,
                     bottomPadding = bottomPadding,
                     onOpenDetail = openDetail,
-                    isCurrentPage = selectedPage == searchPage,
+                    isCurrentPage = selectedPage == page,
                     focusRequestId = searchFocusRequestId,
                 )
 

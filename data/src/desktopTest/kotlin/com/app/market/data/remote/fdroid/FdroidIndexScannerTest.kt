@@ -30,6 +30,9 @@ class FdroidIndexScannerTest {
         return entries
     }
 
+    /** 复用的 Json 实例；测试只需宽松解析部分模型。 */
+    private val lenientJson = Json { ignoreUnknownKeys = true; isLenient = true }
+
     @Test
     fun extractsEachPackageAndSkipsOtherTopLevelKeys() {
         val json = """
@@ -71,7 +74,7 @@ class FdroidIndexScannerTest {
         """.trimIndent()
         val entries = scan(json)
         assertEquals(1, entries.size)
-        val app = Json { ignoreUnknownKeys = true; isLenient = true }
+        val app = lenientJson
             .decodeFromString<FdroidIndexPackage>(entries.single().second)
         assertEquals("F-Droid 客户端", app.metadata.name.fdroidLocalized())
         assertEquals("""Long description with {braces} and "quotes".""", app.metadata.description.fdroidLocalized())
@@ -96,7 +99,7 @@ class FdroidIndexScannerTest {
         val entries = scan(json)
         assertEquals(1, entries.size)
         assertEquals("org.u", entries.single().first)
-        val app = Json { ignoreUnknownKeys = true }
+        val app = lenientJson
             .decodeFromString<FdroidIndexPackage>(entries.single().second)
         assertEquals("A\nB 中 \"q\" \\ z", app.metadata.name.fdroidLocalized())
     }

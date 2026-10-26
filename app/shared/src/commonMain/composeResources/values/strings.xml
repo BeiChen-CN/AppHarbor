@@ -25,6 +25,7 @@
     <string name="featured">Featured</string>
     <string name="recommended">Recommended</string>
     <string name="golden_award">Golden Award</string>
+    <string name="today_home">Home</string>
 
     <!-- Actions -->
     <string name="install">Install</string>
@@ -125,6 +126,9 @@
     <string name="source_github">GitHub</string>
     <string name="source_gitlab">GitLab</string>
     <string name="source_lsposed">LSPosed</string>
+    <string name="source_x360">360 Mobile Assistant</string>
+    <string name="source_shoudji">Shouji Leyuan</string>
+    <string name="source_hais">HAIS APK Archive</string>
     <string name="search_repository_hint">Search apps or enter a repository URL</string>
     <string name="search_lsposed_hint">Search Xposed modules by name or package</string>
     <string name="source_honor">Honor</string>
@@ -144,6 +148,15 @@
     <string name="historical_versions_summary">View all versions</string>
     <string name="historical_versions_title">%1$s versions</string>
     <string name="no_historical_versions">No historical versions</string>
+    <string name="historical_version_source">Version source</string>
+    <string name="github_login">GitHub account</string>
+    <string name="github_login_summary">Sign in to raise the GitHub API limit from 60 to 5000 requests per hour</string>
+    <string name="github_login_signed_in">Signed in as %1$s</string>
+    <string name="github_token_hint">Paste a GitHub personal access token with no scopes. It is only sent to api.github.com, never to download URLs.</string>
+    <string name="github_token_placeholder">Token</string>
+    <string name="github_token_invalid">Token rejected by GitHub</string>
+    <string name="github_token_remaining">%1$d / %2$d requests left this hour</string>
+    <string name="github_logout">Sign out</string>
     <string name="retry">Retry</string>
     <string name="show_app_comments">Show user reviews</string>
     <string name="show_app_comments_summary">Shown on detail pages when the current search source provides reviews</string>
@@ -341,6 +354,12 @@
     <string name="include_prerelease_updates_summary">Allow beta and RC updates in aggregate checks; installed test versions can continue their channel.</string>
     <string name="aggregate_sources">Aggregate update sources</string>
     <string name="aggregate_sources_summary">%1$d sources selected</string>
+    <string name="aggregate_sources_order_hint">Long-press a selected source and drag to reorder. The topmost source wins unless a lower one has a newer version.</string>
+    <string name="aggregate_source_priority">Priority %1$d</string>
+    <string name="hidden_main_tabs">Visible tabs</string>
+    <string name="hidden_main_tabs_summary">Choose which tabs appear in the bottom bar</string>
+    <string name="metered_download_prompt">Ask before downloading on mobile data</string>
+    <string name="metered_download_prompt_summary">Show a confirmation before downloading over a metered network</string>
     <string name="cancel_check">Cancel</string>
     <string name="check_again">Check again</string>
     <string name="check_cancelled_hint">Check cancelled. Results may be incomplete.</string>
@@ -361,6 +380,7 @@
     <string name="settings_sources_content">Sources and content</string>
     <string name="settings_appearance_interaction">Appearance and interaction</string>
     <string name="choose_at_least_one_source">Select at least one source</string>
+    <string name="choose_at_least_one_tab">Keep at least one tab visible</string>
     <string name="comments_section">Comments</string>
     <string name="recommendations_refresh_failed">Refresh failed. Previous recommendations are still available.</string>
     <string name="recommendations_load_failed">Unable to load recommendations</string>

@@ -16,6 +16,7 @@ import com.app.market.domain.model.update.eligibleUpdates
 import com.app.market.domain.model.update.selectLatestUpdates
 import com.app.market.domain.repository.updateSelectionPolicy
 import com.app.market.domain.repository.FeaturePreferencesRepository
+import com.app.market.domain.repository.MainTabId
 import com.app.market.domain.repository.DownloadRepository
 import com.app.market.domain.repository.MarketSourceRepository
 import com.app.market.domain.repository.PackageRepository
@@ -143,8 +144,8 @@ class UpdatesViewModel(
         }
 
         viewModelScope.launch {
-            var activeSource = Triple(prefs.updateSource.value, features.settings.value.aggregateUpdates, features.settings.value.aggregateSources)
-            combine(prefs.updateSource, features.settings.map { it.aggregateUpdates to it.aggregateSources }.distinctUntilChanged()) { source, aggregate ->
+            var activeSource = Triple(prefs.updateSource.value, features.settings.value.aggregateUpdates, features.settings.value.aggregateSourceOrder)
+            combine(prefs.updateSource, features.settings.map { it.aggregateUpdates to it.aggregateSourceOrder }.distinctUntilChanged()) { source, aggregate ->
                 Triple(source, aggregate.first, aggregate.second)
             }.collect { nextSource ->
                 if (nextSource == activeSource) return@collect
@@ -172,6 +173,9 @@ class UpdatesViewModel(
     fun setOnlyUnmeteredDownloads(value: Boolean) = persist { features.setOnlyUnmeteredDownloads(value) }
     fun setShowRecommendationUpdates(value: Boolean) = persist { features.setShowRecommendationUpdates(value) }
     fun setAggregateSources(value: Set<AppSource>) = persist { features.setAggregateSources(value) }
+    fun setAggregateSourceOrder(value: List<AppSource>) = persist { features.setAggregateSourceOrder(value) }
+    fun setMeteredDownloadPrompt(value: Boolean) = persist { features.setMeteredDownloadPrompt(value) }
+    fun setHiddenMainTabs(value: Set<MainTabId>) = persist { features.setHiddenMainTabs(value) }
     fun setPreferredUpdateSource(packageName: String, source: AppSource?) = persist { features.setPreferredUpdateSource(packageName, source) }
     fun updateCandidates(packageName: String): List<MarketAppInfo> = eligibleUpdates(
         reconcileInstalledChanges(_raw.value.sourceResults.values.flatten(), installedChanges.value), features.settings.value.updateSelectionPolicy
@@ -211,7 +215,7 @@ class UpdatesViewModel(
                 features.initialized.first { it }
                 val settings = features.settings.value
                 val selectedSource = prefs.updateSource.value
-                val selected = settings.aggregateSources.toList()
+                val selected = settings.aggregateSourceOrder
                 val requested = if (retryOnly) selected.filter { it in _raw.value.failedSources } else selected
                 val retained = if (retryOnly) _raw.value.sourceResults.filterKeys { it !in requested } else emptyMap()
                 _raw.update {

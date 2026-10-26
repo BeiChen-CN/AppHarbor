@@ -67,8 +67,8 @@ class AppUpdateViewModel(
         val info = state.update ?: return
         val meta = DownloadMeta(
             appId = 0L,
-            packageName = PACKAGE_NAME,
-            displayName = "Trove",
+            packageName = VersionInfo.PACKAGE_NAME,
+            displayName = VersionInfo.APP_NAME,
             versionName = info.versionName,
             versionCode = info.versionCode,
             url = info.downloadUrl,
@@ -85,9 +85,5 @@ class AppUpdateViewModel(
     fun consumeStarted() {
         state = state.copy(started = false)
         mutableState.value = state
-    }
-
-    private companion object {
-        const val PACKAGE_NAME = "com.app.market"
     }
 }

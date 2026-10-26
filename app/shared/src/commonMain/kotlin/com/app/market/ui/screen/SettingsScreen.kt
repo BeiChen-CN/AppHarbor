@@ -19,6 +19,7 @@ import com.app.market.resources.*
 import com.app.market.domain.repository.CommentSources
 import com.app.market.domain.repository.FeaturePreferences
 import com.app.market.domain.repository.RecommendationSources
+import com.app.market.domain.repository.ReleaseTokenRepository
 import com.app.market.domain.model.update.UpdateSources
 import com.app.market.ui.component.*
 import com.app.market.ui.util.appSourceLabel
@@ -27,6 +28,7 @@ import com.app.market.viewmodel.UpdatesUiState
 import com.app.market.viewmodel.UpdatesViewModel
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -70,8 +72,12 @@ fun SettingsTab(
     val features by updatesViewModel.featureSettings.collectAsStateWithLifecycle()
     val searchCapabilities = selectedSource.capabilities
     var sourcePicker by remember { mutableStateOf(false) }
+    var tabsPicker by remember { mutableStateOf(false) }
     var pinsPicker by remember { mutableStateOf(false) }
+    var githubLogin by remember { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    val releaseToken = koinInject<ReleaseTokenRepository>()
+    val releaseTokenState by releaseToken.state.collectAsStateWithLifecycle()
 
     val searchEntries = settingsSearchEntries(
         features = features,
@@ -80,6 +86,8 @@ fun SettingsTab(
         stripAppNameSubtitle = stripAppNameSubtitle,
         detectClipboardLinks = detectClipboardLinks,
         updatesViewModel = updatesViewModel,
+        githubLoggedIn = releaseTokenState.loggedIn,
+        githubLoginName = releaseTokenState.login,
         onNavigateTheme = onNavigateTheme,
         onNavigateDeviceProfile = onNavigateDeviceProfile,
         onNavigateInstaller = onNavigateInstaller,
@@ -89,6 +97,7 @@ fun SettingsTab(
         onNavigateIgnored = onNavigateIgnored,
         onNavigateManualUpdate = onNavigateManualUpdate,
         onNavigateAbout = onNavigateAbout,
+        onOpenGithubLogin = { githubLogin = true },
     )
 
     MainTabScaffold(title = stringResource(Res.string.nav_settings)) { topPadding, backdropModifier, scrollBehavior ->
@@ -188,6 +197,15 @@ fun SettingsTab(
                             summary = stringResource(Res.string.only_unmetered_downloads_summary), checked = features.onlyUnmeteredDownloads,
                             onCheckedChange = updatesViewModel::setOnlyUnmeteredDownloads)
                     })
+                    // 关闭「仅 WiFi 下载」后，计费网络仍可下载；此开关决定下载前是否弹窗确认。
+                    if (!features.onlyUnmeteredDownloads) {
+                        add(SettingsRow("metered-prompt") {
+                            SwitchPreference(title = stringResource(Res.string.metered_download_prompt),
+                                summary = stringResource(Res.string.metered_download_prompt_summary),
+                                checked = features.meteredDownloadPrompt,
+                                onCheckedChange = updatesViewModel::setMeteredDownloadPrompt)
+                        })
+                    }
                     add(SettingsRow("aggregate") {
                         SwitchPreference(title = stringResource(Res.string.aggregate_updates),
                             summary = stringResource(Res.string.aggregate_updates_summary), checked = features.aggregateUpdates,
@@ -243,6 +261,17 @@ fun SettingsTab(
                 add(SettingsRow("downloading") {
                     ArrowPreference(title = stringResource(Res.string.downloading_apps), summary = stringResource(Res.string.downloading_apps_summary), onClick = onNavigateDownloadingApps)
                 })
+                add(SettingsRow("github-login") {
+                    ArrowPreference(
+                        title = stringResource(Res.string.github_login),
+                        summary = if (releaseTokenState.loggedIn) {
+                            stringResource(Res.string.github_login_signed_in, releaseTokenState.login.ifBlank { "-" })
+                        } else {
+                            stringResource(Res.string.github_login_summary)
+                        },
+                        onClick = { githubLogin = true },
+                    )
+                })
                 add(SettingsRow("saved") {
                     ArrowPreference(title = stringResource(Res.string.saved_packages), summary = stringResource(Res.string.saved_packages_summary), onClick = onNavigateSavedPackages)
                 })
@@ -263,6 +292,10 @@ fun SettingsTab(
                 }
             })
             settingsGroup("appearance", Res.string.settings_appearance_interaction, rows = listOf(
+                SettingsRow("tabs") {
+                    ArrowPreference(title = stringResource(Res.string.hidden_main_tabs),
+                        summary = stringResource(Res.string.hidden_main_tabs_summary), onClick = { tabsPicker = true })
+                },
                 SettingsRow("home") {
                     val options = if (appManagementSupported) listOf(HomePage.RECOMMENDATIONS, HomePage.UPDATES, HomePage.SEARCH)
                         else listOf(HomePage.RECOMMENDATIONS, HomePage.SEARCH)
@@ -306,8 +339,25 @@ fun SettingsTab(
             }
         }
     }
-    if (sourcePicker) AggregateSourcesDialog(features.aggregateSources, updatesViewModel::setAggregateSources, { sourcePicker = false })
+    if (sourcePicker) {
+        AggregateSourcesDialog(
+            selected = features.aggregateSourceOrder.filter { it in features.aggregateSources },
+            onSave = updatesViewModel::setAggregateSourceOrder,
+            onDismiss = { sourcePicker = false },
+        )
+    }
+    if (tabsPicker) {
+        HiddenMainTabsDialog(
+            hidden = features.hiddenMainTabs,
+            appManagementSupported = appManagementSupported,
+            onSave = updatesViewModel::setHiddenMainTabs,
+            onDismiss = { tabsPicker = false },
+        )
+    }
     if (pinsPicker) PinnedSourcesDialog(features.preferredUpdateSources, updatesViewModel::setPreferredUpdateSource, { pinsPicker = false })
+    if (githubLogin) {
+        GitHubLoginDialog(show = true, repository = releaseToken, onDismissRequest = { githubLogin = false })
+    }
 }
 
 private data class SettingsRow(val key: String, val content: @Composable () -> Unit)
@@ -372,6 +422,8 @@ private fun settingsSearchEntries(
     stripAppNameSubtitle: Boolean,
     detectClipboardLinks: Boolean,
     updatesViewModel: UpdatesViewModel,
+    githubLoggedIn: Boolean,
+    githubLoginName: String,
     onNavigateTheme: () -> Unit,
     onNavigateDeviceProfile: () -> Unit,
     onNavigateInstaller: () -> Unit,
@@ -381,6 +433,7 @@ private fun settingsSearchEntries(
     onNavigateIgnored: () -> Unit,
     onNavigateManualUpdate: () -> Unit,
     onNavigateAbout: () -> Unit,
+    onOpenGithubLogin: () -> Unit,
 ): List<SettingsSearchEntry> = listOf(
     SettingsSearchEntry.Link(stringResource(Res.string.theme), stringResource(Res.string.theme_summary), onNavigateTheme),
     SettingsSearchEntry.Link(stringResource(Res.string.device_profile), stringResource(Res.string.device_profile_summary), onNavigateDeviceProfile),
@@ -391,6 +444,12 @@ private fun settingsSearchEntries(
     SettingsSearchEntry.Link(stringResource(Res.string.ignored_apps), stringResource(Res.string.ignored_apps_summary), onNavigateIgnored),
     SettingsSearchEntry.Link(stringResource(Res.string.manual_update), stringResource(Res.string.manual_update_summary), onNavigateManualUpdate),
     SettingsSearchEntry.Link(stringResource(Res.string.about), stringResource(Res.string.about_summary), onNavigateAbout),
+    SettingsSearchEntry.Link(
+        stringResource(Res.string.github_login),
+        if (githubLoggedIn) stringResource(Res.string.github_login_signed_in, githubLoginName.ifBlank { "-" })
+        else stringResource(Res.string.github_login_summary),
+        onOpenGithubLogin,
+    ),
     SettingsSearchEntry.Switch(
         stringResource(Res.string.recommendation_updates),
         stringResource(Res.string.recommendation_updates_summary),

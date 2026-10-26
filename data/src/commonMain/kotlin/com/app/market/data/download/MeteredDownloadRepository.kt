@@ -26,7 +26,9 @@ internal class MeteredDownloadRepository(
         val existing = taskStates.value[meta.taskKey]
         if (existing?.phase in setOf(DownloadPhase.QUEUED, DownloadPhase.DOWNLOADING,
                 DownloadPhase.INSTALLING, DownloadPhase.AWAITING_USER_ACTION)) return
-        if (!network.isMetered() || features?.settings?.value?.onlyUnmeteredDownloads == true) {
+        // 仅在「计费网络」且用户开启了流量提醒时才排队等确认；关闭提醒后与普通下载一致。
+        val settings = features?.settings?.value
+        if (!network.isMetered() || settings?.onlyUnmeteredDownloads == true || settings?.meteredDownloadPrompt == false) {
             removePending(meta.packageName, meta.versionCode)
             delegate.start(meta, installAfterDownload)
             return

@@ -17,7 +17,10 @@ import com.app.market.domain.model.update.ManualUpdateRequest
 import com.app.market.domain.model.update.ManualUpdateResult
 import com.app.market.domain.exception.MarketException
 import com.app.market.domain.repository.FdroidRepository
+import com.app.market.domain.repository.HaisRepository
+import com.app.market.domain.repository.ShoudjiRepository
 import com.app.market.domain.repository.TencentRepository
+import com.app.market.domain.repository.X360Repository
 import com.app.market.domain.repository.CoolapkRepository
 import com.app.market.domain.repository.AppchinaRepository
 import com.app.market.domain.repository.Box7723Repository
@@ -56,6 +59,9 @@ internal class MarketSourceRepositoryImpl(
     private val releases: ReleaseSourceRepository,
     private val lsposed: LsposedRepository,
     private val tuna: FdroidRepository,
+    private val x360: X360Repository,
+    private val shoudji: ShoudjiRepository,
+    private val hais: HaisRepository,
 ) : MarketSourceRepository {
     private val commentTargets = CommentTargetCache()
     override suspend fun search(source: AppSource, keyword: String, page: Int): SearchPage = when (source) {
@@ -77,6 +83,9 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID_TUNA -> tuna.search(keyword, page)
         AppSource.GITHUB, AppSource.GITLAB -> releases.search(source, keyword, page)
         AppSource.LSPOSED -> lsposed.search(keyword, page)
+        AppSource.X360 -> x360.search(keyword, page)
+        AppSource.SHOUDJI -> shoudji.search(keyword, page)
+        AppSource.HAIS -> hais.search(keyword, page)
     }
 
     override suspend fun categoryApps(
@@ -125,6 +134,9 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID_TUNA -> tuna.appDetail(packageName)
         AppSource.GITHUB, AppSource.GITLAB -> releases.appDetail(source, appId, packageName)
         AppSource.LSPOSED -> lsposed.appDetail(packageName)
+        AppSource.X360 -> x360.appDetail(appId, packageName)
+        AppSource.SHOUDJI -> shoudji.appDetail(appId, packageName)
+        AppSource.HAIS -> hais.appDetail(packageName)
     }
 
     override suspend fun appComments(source: AppSource, app: MarketAppInfo): AppComments {
@@ -158,6 +170,8 @@ internal class MarketSourceRepositoryImpl(
             AppSource.TENCENT -> tencent.appComments(app)
             // TapTap 网页版评价接口
             AppSource.TAPTAP -> tapTap.appComments(app)
+            AppSource.X360 -> x360.appComments(app)
+            AppSource.SHOUDJI, AppSource.HAIS -> AppComments(emptyList(), 0L)
             AppSource.FDROID -> AppComments(emptyList(), 0L)
             else -> {
                 val xiaomi = if (app.source == AppSource.XIAOMI) app else commentTargets.resolve(AppSource.XIAOMI, app.packageName) { app.onXiaomi() }
@@ -193,6 +207,9 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID_TUNA -> tuna.downloadMeta(app)
         AppSource.GITHUB, AppSource.GITLAB -> releases.downloadMeta(source, app)
         AppSource.LSPOSED -> lsposed.downloadMeta(app)
+        AppSource.X360 -> x360.downloadMeta(app)
+        AppSource.SHOUDJI -> shoudji.downloadMeta(app)
+        AppSource.HAIS -> hais.downloadMeta(app)
     }
 
     override suspend fun downloadUpdateMeta(source: AppSource, app: MarketAppInfo): DownloadMeta = when (source) {
@@ -217,6 +234,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID_TUNA -> tuna.downloadMeta(app)
         AppSource.GITHUB, AppSource.GITLAB -> releases.downloadMeta(source, app)
         AppSource.LSPOSED -> lsposed.downloadMeta(app)
+        // 三个新源都只作为搜索/下载渠道，更新元数据回退小米解析。
+        AppSource.X360, AppSource.SHOUDJI, AppSource.HAIS -> market.downloadUpdateMeta(app.onXiaomi())
     }
 
     override suspend fun loadReconciledCachedUpdates(): List<MarketAppInfo> =
@@ -243,6 +262,8 @@ internal class MarketSourceRepositoryImpl(
         AppSource.FDROID_TUNA -> flow { emit(tuna.checkUpdates()) }
         AppSource.GITHUB, AppSource.GITLAB -> flow { emit(releases.checkUpdates(source)) }
         AppSource.LSPOSED -> flow { emit(lsposed.checkUpdates()) }
+        // 无更新协议，能力位已保证不会被选为更新来源。
+        AppSource.X360, AppSource.SHOUDJI, AppSource.HAIS -> flow { emit(emptyList()) }
     }
 
     override suspend fun checkManualUpdate(source: AppSource, request: ManualUpdateRequest): ManualUpdateResult =
@@ -266,13 +287,14 @@ internal class MarketSourceRepositoryImpl(
             AppSource.FDROID_TUNA -> tuna.checkManualUpdate(request)
             AppSource.GITHUB, AppSource.GITLAB -> releases.checkManualUpdate(source, request)
             AppSource.LSPOSED -> lsposed.checkManualUpdate(request)
+            AppSource.X360, AppSource.SHOUDJI, AppSource.HAIS -> market.checkManualUpdate(request)
         }
 
     override suspend fun goldMiFeed(source: AppSource, page: Int, pageSize: Int): TodayFeedPage =
         when (source) {
             AppSource.OPPO -> oppo.beautyFeed(page, pageSize)
             // 无独立今日内容的来源回退小米商店今日。
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB, AppSource.LSPOSED ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB, AppSource.LSPOSED, AppSource.X360, AppSource.SHOUDJI, AppSource.HAIS ->
                 today.goldMiFeed(page, pageSize)
 
             AppSource.VIVO -> vivo.auroraFeed(page, pageSize)
@@ -282,7 +304,7 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun todayArticle(source: AppSource, rId: String): TodayArticle =
         when (source) {
             AppSource.OPPO -> oppo.beautyArticle(rId)
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB, AppSource.LSPOSED ->
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.SAMSUNG, AppSource.HUAWEI, AppSource.HONOR, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB, AppSource.LSPOSED, AppSource.X360, AppSource.SHOUDJI, AppSource.HAIS ->
                 today.todayArticle(rId)
 
             AppSource.VIVO -> vivo.auroraArticle(rId)
@@ -295,11 +317,21 @@ internal class MarketSourceRepositoryImpl(
         packageName: String,
         offset: Int,
     ): HistoricalVersionPage = when (source) {
-        AppSource.WANDOUJIA -> wandoujia.historicalVersions(appId, packageName, offset)
-        AppSource.APPCHINA -> appchina.historicalVersions(appId, packageName, offset)
+        AppSource.WANDOUJIA -> wandoujia.historicalVersions(
+            resolveStoreAppId(source, packageName, appId) { wandoujia.search(it, 0) },
+            packageName,
+            offset,
+        )
+        // 应用汇历史接口强制要求站内数字 id：换源进入时 appId 可能为 0，先按包名补齐。
+        AppSource.APPCHINA -> appchina.historicalVersions(
+            resolveStoreAppId(source, packageName, appId) { appchina.search(it, 0) },
+            packageName,
+            offset,
+        )
         AppSource.FDROID -> fdroid.historicalVersions(packageName, offset)
         AppSource.IZZYONDROID -> izzy.historicalVersions(packageName, offset)
         AppSource.FDROID_TUNA -> tuna.historicalVersions(packageName, offset)
+        AppSource.HAIS -> hais.historicalVersions(packageName, offset)
         // 其余来源未声明 supportsHistoricalVersions，UI 不会进入；返回空页兜底
         else -> HistoricalVersionPage(items = emptyList(), nextOffset = null)
     }
@@ -311,6 +343,7 @@ internal class MarketSourceRepositoryImpl(
             AppSource.FDROID -> fdroid.historicalDownloadMeta(version)
             AppSource.IZZYONDROID -> izzy.historicalDownloadMeta(version)
             AppSource.FDROID_TUNA -> tuna.historicalDownloadMeta(version)
+            AppSource.HAIS -> hais.historicalDownloadMeta(version)
             else -> throw MarketException("该来源不支持历史版本下载")
         }
 

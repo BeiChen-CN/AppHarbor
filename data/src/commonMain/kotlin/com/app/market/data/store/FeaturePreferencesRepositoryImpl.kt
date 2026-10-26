@@ -36,19 +36,29 @@ internal class FeaturePreferencesRepositoryImpl(
                 Triple(prereleases, sources, pinned)
             }) { base, extra ->
                 base.copy(includePrereleaseUpdates = extra.first,
-                    aggregateSources = extra.second.orEmpty().split(',').mapNotNull(AppSource::fromToken).filter { it in UpdateSources }
-                        .toSet().ifEmpty { UpdateSources.toSet() },
+                    aggregateSourceOrder = restoreSourceOrder(extra.second),
                     preferredUpdateSources = extra.third.orEmpty().split(',').mapNotNull { entry ->
                         val parts = entry.split('=', limit = 2)
                         val source = AppSource.fromToken(parts.getOrNull(1))?.takeIf { it in UpdateSources }
                         if (parts.first().isNotBlank() && source != null) parts.first() to source else null
                     }.toMap())
-            }.combine(combine(preferences.observe(Unmetered), preferences.observe(RecommendationUpdates)) { unmetered, recommendationUpdates ->
-                unmetered to recommendationUpdates
-            }) { settings, flags ->
+            }.combine(
+                combine(preferences.observe(Unmetered), preferences.observe(RecommendationUpdates)) { unmetered, recommendationUpdates ->
+                    unmetered to recommendationUpdates
+                }
+            ) { settings, flags ->
                 settings.copy(
                     onlyUnmeteredDownloads = flags.first,
                     showRecommendationUpdates = flags.second,
+                )
+            }.combine(
+                combine(preferences.observe(MeteredPrompt), preferences.observe(HiddenTabs)) { metered, hiddenTabs ->
+                    metered to hiddenTabs
+                }
+            ) { settings, flags ->
+                settings.copy(
+                    meteredDownloadPrompt = flags.first,
+                    hiddenMainTabs = MainTabId.parse(flags.second),
                 )
             }
                 .collect { mutableSettings.value = it; mutableInitialized.value = true }
@@ -67,11 +77,19 @@ internal class FeaturePreferencesRepositoryImpl(
 
     override suspend fun setIncludePrereleaseUpdates(value: Boolean) = preferences.put(Prereleases, value)
     override suspend fun setOnlyUnmeteredDownloads(value: Boolean) = preferences.put(Unmetered, value)
+    override suspend fun setMeteredDownloadPrompt(value: Boolean) = preferences.put(MeteredPrompt, value)
     override suspend fun setShowRecommendationUpdates(value: Boolean) = preferences.put(RecommendationUpdates, value)
 
-    override suspend fun setAggregateSources(value: Set<AppSource>) {
+    override suspend fun setHiddenMainTabs(value: Set<MainTabId>) {
+        // 至少保留一个页签，否则底栏会变成空条。
+        require(value.size < MainTabId.Configurable.size)
+        preferences.put(HiddenTabs, MainTabId.serialize(value))
+    }
+
+    /** 顺序即优先级：原样保存，不做排序。 */
+    override suspend fun setAggregateSourceOrder(value: List<AppSource>) {
         require(value.isNotEmpty() && value.all { it in UpdateSources })
-        preferences.put(Sources, value.sortedBy { it.ordinal }.joinToString(",") { it.token })
+        preferences.put(Sources, value.distinct().joinToString(",") { it.token })
     }
 
     override suspend fun setPreferredUpdateSource(packageName: String, source: AppSource?) = pinLock.withLock {
@@ -86,6 +104,18 @@ internal class FeaturePreferencesRepositoryImpl(
         preferences.put(Pinned, pinned.toSortedMap().entries.joinToString(",") { "${it.key}=${it.value.token}" })
     }
 
+    /**
+     * 恢复存储的来源与顺序。
+     *
+     * 语义是「参与聚合的来源子集 + 优先级顺序」：未列出的来源视为未选中，不补回队尾，
+     * 否则用户取消勾选会被静默撤销。存储为空（首次启动或旧数据为空）时退回默认全集。
+     */
+    private fun restoreSourceOrder(raw: String?): List<AppSource> {
+        val stored = raw.orEmpty().split(',').mapNotNull(AppSource::fromToken)
+            .filter { it in UpdateSources }.distinct()
+        return stored.ifEmpty { UpdateSources }
+    }
+
     private companion object {
         val Aggregate = BooleanPreferenceKey("features", "aggregate_updates")
         val Comments = StringPreferenceKey("features", "comment_source")
@@ -94,6 +124,8 @@ internal class FeaturePreferencesRepositoryImpl(
         val Sources = StringPreferenceKey("features", "aggregate_sources")
         val Pinned = StringPreferenceKey("features", "preferred_update_sources")
         val Unmetered = BooleanPreferenceKey("features", "only_unmetered_downloads")
+        val MeteredPrompt = BooleanPreferenceKey("features", "metered_download_prompt", default = true)
+        val HiddenTabs = StringPreferenceKey("features", "hidden_main_tabs")
         val RecommendationUpdates = BooleanPreferenceKey("features", "recommendation_updates", default = true)
     }
 }

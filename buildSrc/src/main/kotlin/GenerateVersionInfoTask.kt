@@ -12,6 +12,12 @@ abstract class GenerateVersionInfoTask : DefaultTask() {
     @get:Input
     abstract val versionCode: Property<Int>
 
+    @get:Input
+    abstract val appName: Property<String>
+
+    @get:Input
+    abstract val packageName: Property<String>
+
     @get:OutputFile
     abstract val outputFile: RegularFileProperty
 
@@ -21,11 +27,14 @@ abstract class GenerateVersionInfoTask : DefaultTask() {
         file.parentFile.mkdirs()
         file.writeText(
             """
+            // 由 :app:shared:generateVersionInfo 生成，请勿手动修改。
             package misc
 
             object VersionInfo {
                 const val VERSION_NAME = "${versionName.get()}"
                 const val VERSION_CODE = ${versionCode.get()}
+                const val APP_NAME = "${appName.get()}"
+                const val PACKAGE_NAME = "${packageName.get()}"
             }
             """.trimIndent(),
         )

@@ -85,6 +85,8 @@ val generateVersionInfo = tasks.register<GenerateVersionInfoTask>("generateVersi
     description = "generateVersionInfo"
     versionName.set(ProjectConfig.VERSION_NAME)
     versionCode.set(resolveVersionCode())
+    appName.set(ProjectConfig.APP_NAME)
+    packageName.set(ProjectConfig.PACKAGE_NAME)
     outputFile.set(generatedSrcDir.map { it.file("kotlin/misc/VersionInfo.kt") })
 }
 

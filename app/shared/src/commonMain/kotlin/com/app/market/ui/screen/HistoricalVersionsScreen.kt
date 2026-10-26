@@ -16,6 +16,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +39,7 @@ import com.app.market.resources.download
 import com.app.market.resources.download_finished
 import com.app.market.resources.download_paused
 import com.app.market.resources.downloading_short
+import com.app.market.resources.historical_version_source
 import com.app.market.resources.historical_versions_title
 import com.app.market.resources.installing_short
 import com.app.market.resources.no_historical_versions
@@ -47,6 +51,7 @@ import com.app.market.ui.component.CardSegmentContainer
 import com.app.market.ui.component.LoadingBox
 import com.app.market.ui.component.MarketScaffold
 import com.app.market.ui.component.PageVerticalPadding
+import com.app.market.ui.component.SourcePickerDialog
 import com.app.market.ui.util.formatSize
 import com.app.market.ui.util.localDateOf
 import com.app.market.domain.model.market.AppSource
@@ -54,7 +59,11 @@ import com.app.market.viewmodel.HistoricalVersionsViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.number
 import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -67,11 +76,13 @@ fun HistoricalVersionsScreen(
     displayName: String,
     source: AppSource,
     onBack: () -> Unit,
+    onSwitchSource: (AppSource) -> Unit,
 ) {
     LaunchedEffect(source, appId, packageName) { viewModel.load(source, appId, packageName) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val downloadStates by viewModel.downloadStates.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    var sourcePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(listState, source, appId, packageName) {
         snapshotFlow {
@@ -88,6 +99,14 @@ fun HistoricalVersionsScreen(
     MarketScaffold(
         title = stringResource(Res.string.historical_versions_title, displayName),
         onBack = onBack,
+        actions = {
+            IconButton(onClick = { sourcePicker = true }) {
+                Icon(
+                    imageVector = MiuixIcons.Replace,
+                    contentDescription = stringResource(Res.string.historical_version_source),
+                )
+            }
+        },
     ) { innerPadding, backdropModifier, scrollBehavior ->
         val layoutDirection = LocalLayoutDirection.current
         LazyColumn(
@@ -165,7 +184,20 @@ fun HistoricalVersionsScreen(
             }
         }
     }
+
+    SourcePickerDialog(
+        show = sourcePicker,
+        title = stringResource(Res.string.historical_version_source),
+        options = HistoricalVersionSources,
+        selected = source,
+        onSelect = { picked -> if (picked != null && picked != source) onSwitchSource(picked) },
+        onDismiss = { sourcePicker = false },
+    )
 }
+
+/** 声明了历史版本能力且确实实现了取版本接口的来源；下拉里不再出现空结果来源。 */
+internal val HistoricalVersionSources: List<AppSource?> =
+    AppSource.entries.filter { it.capabilities.supportsHistoricalVersions }
 
 @Composable
 private fun HistoricalVersionRow(

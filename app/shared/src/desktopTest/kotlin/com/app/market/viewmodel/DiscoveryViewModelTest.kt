@@ -4,6 +4,7 @@ import com.app.market.domain.model.market.AppSource
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.today.TodayFeaturedItem
 import com.app.market.domain.model.today.TodayFeedPage
+import com.app.market.domain.model.update.UpdateSources
 import com.app.market.domain.repository.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -118,8 +119,13 @@ internal class TestFeaturePreferences : FeaturePreferencesRepository {
     override suspend fun setRecommendationSource(value: AppSource) { settings.update { it.copy(recommendationSource = value) } }
     override suspend fun setShowRecommendationUpdates(value: Boolean) { settings.update { it.copy(showRecommendationUpdates = value) } }
     override suspend fun setIncludePrereleaseUpdates(value: Boolean) { settings.update { it.copy(includePrereleaseUpdates = value) } }
-    override suspend fun setAggregateSources(value: Set<AppSource>) { settings.update { it.copy(aggregateSources = value) } }
+    override suspend fun setAggregateSourceOrder(value: List<AppSource>) { settings.update { it.copy(aggregateSourceOrder = value) } }
+    override suspend fun setAggregateSources(value: Set<AppSource>) {
+        setAggregateSourceOrder(UpdateSources.filter { it in value }.ifEmpty { UpdateSources })
+    }
     override suspend fun setOnlyUnmeteredDownloads(value: Boolean) { settings.update { it.copy(onlyUnmeteredDownloads = value) } }
+    override suspend fun setMeteredDownloadPrompt(value: Boolean) { settings.update { it.copy(meteredDownloadPrompt = value) } }
+    override suspend fun setHiddenMainTabs(value: Set<MainTabId>) { settings.update { it.copy(hiddenMainTabs = value) } }
     override suspend fun setPreferredUpdateSource(packageName: String, source: AppSource?) {
         settings.update { it.copy(preferredUpdateSources = it.preferredUpdateSources.toMutableMap().apply {
             if (source == null) remove(packageName) else put(packageName, source)

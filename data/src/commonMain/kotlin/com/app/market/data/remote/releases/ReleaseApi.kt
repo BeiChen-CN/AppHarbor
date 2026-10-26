@@ -30,8 +30,41 @@ internal data class RepositoryRelease(
     val icon: String, val assets: List<ReleaseAsset>,
 )
 
-internal class ReleaseApi(private val client: HttpClient) {
+internal class ReleaseApi(
+    private val client: HttpClient,
+    /** 已登录的 GitHub 令牌；为空表示匿名访问（60 次/小时）。 */
+    private val tokens: GithubTokenHolder = GithubTokenHolder(),
+) {
     private val json = Json { ignoreUnknownKeys = true }
+
+    /** 用令牌换取 GitHub 登录名，令牌无效时抛出 [MarketException]。 */
+    suspend fun viewerLogin(token: String): String {
+        val response = client.get("$GITHUB_API/user") {
+            header(HttpHeaders.UserAgent, "Trove")
+            header(HttpHeaders.Accept, "application/vnd.github+json")
+            header(HttpHeaders.Authorization, "Bearer ${token.trim()}")
+        }
+        if (response.status.value == 401) throw MarketException("GitHub 令牌无效或已过期")
+        if (response.status.value !in 200..299) throw MarketException("GitHub 登录失败：HTTP ${response.status.value}")
+        val login = json.parseToJsonElement(response.bodyAsText()).fdjString("login").trim()
+        if (login.isEmpty()) throw MarketException("GitHub 未返回登录名")
+        return login
+    }
+
+    /** 查询令牌的剩余额度，用于设置页提示；查询失败返回 null。 */
+    suspend fun rateLimit(token: String): Pair<Int, Int>? {
+        val response = runCatching {
+            client.get("$GITHUB_API/rate_limit") {
+                header(HttpHeaders.UserAgent, "Trove")
+                header(HttpHeaders.Accept, "application/vnd.github+json")
+                if (token.isNotBlank()) header(HttpHeaders.Authorization, "Bearer ${token.trim()}")
+            }
+        }.getOrNull() ?: return null
+        if (response.status.value !in 200..299) return null
+        val root = runCatching { json.parseToJsonElement(response.bodyAsText()) }.getOrNull() ?: return null
+        val core = root.fdjObject("resources").fdjObject("core")
+        return core.fdjLong("remaining").toInt() to core.fdjLong("limit").toInt()
+    }
 
     suspend fun search(source: AppSource, keyword: String, page: Int): Pair<List<ReleaseRepositoryRef>, Boolean> {
         val root = if (source == AppSource.GITHUB) {
@@ -76,20 +109,33 @@ internal class ReleaseApi(private val client: HttpClient) {
     }
 
     private suspend fun get(url: String, configure: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {}): JsonElement? {
+        // 只有 GitHub 的 api.github.com 接受令牌；GitLab 匿名即可，避免把 GitHub 凭据发给第三方。
+        val token = if (url.startsWith(GITHUB_API)) tokens.token else ""
         val response = client.get(url) {
             header(HttpHeaders.UserAgent, "Trove")
             header(HttpHeaders.Accept, "application/json")
+            if (token.isNotBlank()) header(HttpHeaders.Authorization, "Bearer ${token.trim()}")
             configure()
         }
         if (response.status.value == 404) return null
+        if (response.status.value == 401) {
+            throw MarketException(
+                if (token.isNotBlank()) "GitHub 令牌已失效，请在设置中重新登录"
+                else "GitHub 拒绝了匿名请求，请在设置中登录 GitHub",
+            )
+        }
         if (response.status.value == 429 || response.status.value == 403 && response.headers["X-RateLimit-Remaining"] == "0") {
-            throw MarketException("来源 API 请求次数已达上限，请稍后重试")
+            val hint = if (token.isNotBlank()) "当前令牌额度已用尽，请稍后重试" else "请在设置中登录 GitHub 以提升额度"
+            throw MarketException("来源 API 请求次数已达上限，$hint")
         }
         if (response.status.value !in 200..299) throw MarketException("来源请求失败：HTTP ${response.status.value}")
         return json.parseToJsonElement(response.bodyAsText())
     }
 
-    private companion object { const val PAGE_SIZE = 8 }
+    private companion object {
+        const val PAGE_SIZE = 8
+        const val GITHUB_API = "https://api.github.com"
+    }
 }
 
 internal fun parseReleaseRepository(source: AppSource, input: String): ReleaseRepositoryRef? {

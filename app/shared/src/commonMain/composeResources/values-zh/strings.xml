@@ -126,6 +126,9 @@
     <string name="source_github">GitHub</string>
     <string name="source_gitlab">GitLab</string>
     <string name="source_lsposed">LSPosed</string>
+    <string name="source_x360">360 手机助手</string>
+    <string name="source_shoudji">手机乐园</string>
+    <string name="source_hais">HAIS 应用存档</string>
     <string name="search_repository_hint">搜索应用或输入仓库链接</string>
     <string name="search_lsposed_hint">搜索 Xposed 模块名称或包名</string>
     <string name="source_honor">荣耀</string>
@@ -145,6 +148,15 @@
     <string name="historical_versions_summary">查看全部版本</string>
     <string name="historical_versions_title">%1$s的历史版本</string>
     <string name="no_historical_versions">暂无历史版本</string>
+    <string name="historical_version_source">版本来源</string>
+    <string name="github_login">GitHub 账号</string>
+    <string name="github_login_summary">登录后 GitHub API 限额从每小时 60 次提升到 5000 次</string>
+    <string name="github_login_signed_in">已登录 %1$s</string>
+    <string name="github_token_hint">粘贴 GitHub 个人访问令牌，无需勾选任何 scope。令牌只发给 api.github.com，不会带到下载地址。</string>
+    <string name="github_token_placeholder">令牌</string>
+    <string name="github_token_invalid">GitHub 拒绝了该令牌</string>
+    <string name="github_token_remaining">本小时剩余 %1$d / %2$d 次</string>
+    <string name="github_logout">退出登录</string>
     <string name="retry">重试</string>
     <string name="show_app_comments">显示用户评论</string>
     <string name="show_app_comments_summary">当前搜索来源提供评论时，在详情页显示</string>
@@ -342,6 +354,12 @@
     <string name="include_prerelease_updates_summary">允许聚合检查选择 Beta、RC 等版本；已安装的测试版仍可继续更新</string>
     <string name="aggregate_sources">参与聚合的来源</string>
     <string name="aggregate_sources_summary">已选择 %1$d 个来源</string>
+    <string name="aggregate_sources_order_hint">长按已选来源并拖动可调整优先级。排在上面的来源优先，只有它不是最新版本时才顺移到下一个来源。</string>
+    <string name="aggregate_source_priority">优先级 %1$d</string>
+    <string name="hidden_main_tabs">显示的页签</string>
+    <string name="hidden_main_tabs_summary">选择底栏中显示哪些类别</string>
+    <string name="metered_download_prompt">移动网络下载前提醒</string>
+    <string name="metered_download_prompt_summary">在计费网络下下载前弹出确认提示</string>
     <string name="cancel_check">取消检查</string>
     <string name="check_again">重新检查</string>
     <string name="check_cancelled_hint">检查已取消，当前结果可能不完整</string>
@@ -362,6 +380,7 @@
     <string name="settings_sources_content">来源与内容</string>
     <string name="settings_appearance_interaction">外观与交互</string>
     <string name="choose_at_least_one_source">请至少选择一个来源</string>
+    <string name="choose_at_least_one_tab">请至少保留一个页签</string>
     <string name="comments_section">用户评论</string>
     <string name="recommendations_refresh_failed">刷新失败，仍显示上次的推荐内容</string>
     <string name="recommendations_load_failed">推荐加载失败</string>

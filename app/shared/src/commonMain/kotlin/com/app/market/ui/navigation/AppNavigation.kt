@@ -151,6 +151,10 @@ fun AppNavigation(
                     displayName = route.displayName,
                     source = route.source,
                     onBack = { navigator.pop() },
+                    onSwitchSource = { picked ->
+                        // 换源后就地替换当前页：appId 属于旧来源，换源后按包名重新解析。
+                        navigator.replace(route.copy(appId = 0L, source = picked))
+                    },
                 )
             }
             entry<Route.TodayArticle>(swipeDismiss = swipeBackDirection) { route ->

@@ -232,6 +232,52 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             // 以 Xposed Module Repository 的正式版 Release 做更新比对
             supportsUpdates = true,
         ),
+    ),
+
+    // 360 手机助手网页端：移动版搜索 JSON + 详情页 HTML + 评论 JSON
+    X360(
+        "360",
+        SourceCapabilities(
+            // 移动版 /message/index 返回结构化评论数组；分页参数未暴露，单次取首屏
+            supportsComments = true,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            // 无批量更新协议，仅作为搜索/下载/评论来源
+            supportsUpdates = false,
+        ),
+    ),
+
+    // 手机乐园：网页端站内搜索 / 详情 / 下载直链
+    SHOUDJI(
+        "shouji",
+        SourceCapabilities(
+            // 评论接口位于 tj.shouji.com.cn，详情页未注入 objType/objID，评论不可用
+            supportsComments = false,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            supportsUpdates = false,
+        ),
+    ),
+
+    // 安卓盒 apk.hais.pw：APK 归档站，多来源变体 + 官方历史版本直链，无评论
+    HAIS(
+        "hais",
+        SourceCapabilities(
+            supportsComments = false,
+            supportsSameDeveloperApps = false,
+            prefersOpenLinkLaunch = false,
+            reportsDeltaSize = false,
+            supportsTodayFeed = false,
+            todayFullCoverOverlay = false,
+            supportsUpdates = false,
+            supportsHistoricalVersions = true,
+        ),
     );
 
     companion object {

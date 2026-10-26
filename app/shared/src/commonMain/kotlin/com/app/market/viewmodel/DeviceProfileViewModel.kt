@@ -330,7 +330,7 @@ class DeviceProfileViewModel(
             AppSource.SAMSUNG -> SAMSUNG_FIELDS
             AppSource.HONOR -> HONOR_FIELDS
             AppSource.HUAWEI -> HUAWEI_FIELDS
-            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.TAPTAP, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB, AppSource.LSPOSED -> FIELDS
+            AppSource.XIAOMI, AppSource.WANDOUJIA, AppSource.TAPTAP, AppSource.KUAIBAO, AppSource.APPCHINA, AppSource.BOX7723, AppSource.FDROID, AppSource.FDROID_TUNA, AppSource.COOLAPK, AppSource.TENCENT, AppSource.IZZYONDROID, AppSource.GITHUB, AppSource.GITLAB, AppSource.LSPOSED, AppSource.X360, AppSource.SHOUDJI, AppSource.HAIS -> FIELDS
         }
 
         fun hasCustomSamsungRequestContext(

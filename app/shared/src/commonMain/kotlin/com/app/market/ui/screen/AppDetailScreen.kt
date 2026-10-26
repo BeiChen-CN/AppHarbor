@@ -131,7 +131,6 @@ import com.app.market.resources.date_full
 import com.app.market.resources.download_count
 import com.app.market.resources.featured_offers
 import com.app.market.resources.historical_versions
-import com.app.market.resources.historical_versions_summary
 import com.app.market.resources.ic_star
 import com.app.market.resources.ic_star_fill
 import com.app.market.resources.image_save_failed
@@ -206,6 +205,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Play
+import top.yukonga.miuix.kmp.icon.extended.Recent
+import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.squircle.squircleBackground
@@ -366,11 +367,22 @@ fun AppDetailScreen(
                 title = collapsedTitle,
                 onBack = onBack,
                 persistentActions = {
-                    AppTextButton(
-                        text = stringResource(Res.string.switch_comment_source),
-                        onClick = { commentPicker = true },
-                        minHeight = 32.dp,
-                    )
+                    // 评论换源与历史版本都用图标，避免长文案挤占顶栏宽度。
+                    IconButton(onClick = { commentPicker = true }) {
+                        Icon(
+                            imageVector = MiuixIcons.Replace,
+                            contentDescription = stringResource(Res.string.switch_comment_source),
+                        )
+                    }
+                    val historyApp = current?.app
+                    if (historyApp != null && historyApp.source.capabilities.supportsHistoricalVersions) {
+                        IconButton(onClick = { onOpenHistory(historyApp) }) {
+                            Icon(
+                                imageVector = MiuixIcons.Recent,
+                                contentDescription = stringResource(Res.string.historical_versions),
+                            )
+                        }
+                    }
                 },
                 actions = {
                     if (current != null && actionKind != null) {
@@ -578,8 +590,6 @@ private fun AppDetailContent(
     val previewTitle = stringResource(Res.string.preview)
     val promotionsTitle = stringResource(Res.string.featured_offers)
     val appInfoTitle = stringResource(Res.string.app_info)
-    val historicalVersionsLabel = stringResource(Res.string.historical_versions)
-    val historicalVersionsSummary = stringResource(Res.string.historical_versions_summary)
 
     val commentCount = maxOf(comments.totalCount, comments.items.size.toLong())
     val storeReviewsLabel = stringResource(Res.string.num_comments, formatCount(current.commentCount).ifBlank { "0" })
@@ -697,14 +707,6 @@ private fun AppDetailContent(
                                 value = tapToOpenText,
                                 valueColor = MiuixTheme.colorScheme.primary,
                                 onValueClick = { uriHandler.openUri(current.privacyUrl) },
-                            )
-                        }
-                        if (current.app.source.capabilities.supportsHistoricalVersions) {
-                            InfoLine(
-                                label = historicalVersionsLabel,
-                                value = historicalVersionsSummary,
-                                valueColor = MiuixTheme.colorScheme.primary,
-                                onValueClick = { onOpenHistory(current.app) },
                             )
                         }
                     }
