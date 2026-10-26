@@ -1,0 +1,26 @@
+{
+  "name": "trove-promo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "studio": "remotion studio src/index.ts --port=3100",
+    "render": "remotion render src/index.ts TroveVertical out/Trove-promo-vertical.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --concurrency=4",
+    "poster": "remotion still src/index.ts TroveVertical out/Trove-poster.png --frame=90",
+    "check": "tsc --noEmit",
+    "qa": "node scripts/render_qa.mjs",
+    "music": "python scripts/make_music.py"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.534",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.534"
+  },
+  "devDependencies": {
+    "@remotion/bundler": "4.0.534",
+    "@remotion/renderer": "4.0.534",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}
