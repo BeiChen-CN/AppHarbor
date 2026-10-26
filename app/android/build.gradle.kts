@@ -18,7 +18,6 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.core.ktx)
     implementation(libs.coil.singleton)
-    implementation(libs.androidx.core.splashscreen)
     implementation(libs.hiddenapibypass)
     implementation(libs.rikka.shizuku.provider)
     implementation(libs.rikka.shizuku.api)
@@ -48,10 +47,16 @@ android {
 
     val properties = Properties()
     runCatching { project.rootProject.file("local.properties").reader(Charsets.UTF_8).use(properties::load) }
-    val keystorePath = properties.getProperty("KEYSTORE_PATH") ?: System.getenv("KEYSTORE_PATH")
-    val keystorePwd = properties.getProperty("KEYSTORE_PASS") ?: System.getenv("KEYSTORE_PASS")
-    val alias = properties.getProperty("KEY_ALIAS") ?: System.getenv("KEY_ALIAS")
-    val pwd = properties.getProperty("KEY_PASSWORD") ?: System.getenv("KEY_PASSWORD")
+
+    // 凭据优先读环境变量（CI 与本地开发都适用），local.properties 仅作本地兜底，
+    // 避免明文密码成为唯一来源。
+    fun credential(key: String): String? =
+        System.getenv(key)?.takeIf { it.isNotBlank() } ?: properties.getProperty(key)
+
+    val keystorePath = credential("KEYSTORE_PATH")
+    val keystorePwd = credential("KEYSTORE_PASS")
+    val alias = credential("KEY_ALIAS")
+    val pwd = credential("KEY_PASSWORD")
     if (keystorePath != null) {
         signingConfigs {
             register("github") {

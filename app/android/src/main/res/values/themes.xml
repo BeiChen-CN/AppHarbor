@@ -1,12 +1,7 @@
 <resources>
 
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F1EEE7</item>
         <item name="android:windowLightStatusBar">true</item>
-    </style>
-
-    <style name="AppTheme.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#F1EEE7</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
-        <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>
 </resources>

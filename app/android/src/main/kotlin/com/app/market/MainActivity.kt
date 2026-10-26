@@ -14,7 +14,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.app.market.domain.model.market.AppSource
 import com.app.market.domain.model.market.MarketLink
 import com.app.market.domain.model.market.MarketLinkParser
@@ -33,7 +32,6 @@ class MainActivity : ComponentActivity(), KoinComponent {
     private val permissions: AndroidPermissionCoordinator by inject()
     private val updatePreferences: UpdatePreferencesRepository by inject()
     private val themePreferences: ThemePreferencesRepository by inject()
-    private var contentReady = false
 
     private val installedAppsPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -45,9 +43,7 @@ class MainActivity : ComponentActivity(), KoinComponent {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
-        splashScreen.setKeepOnScreenCondition { !contentReady }
         consumeExternalIntent(intent)
         permissions.registerInstalledApps(installedAppsPermissionLauncher)
         permissions.registerNotifications(postNotificationsPermissionLauncher)
@@ -87,7 +83,6 @@ class MainActivity : ComponentActivity(), KoinComponent {
                     externalOpenDownloads = downloadsRequest,
                     onExternalDownloadsConsumed = { externalDownloadsRequest.value = false },
                 )
-                SideEffect { contentReady = true }
             }
         }
     }

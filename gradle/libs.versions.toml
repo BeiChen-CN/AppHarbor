@@ -6,7 +6,6 @@ androidx-core = "1.19.0"
 androidx-datastore = "1.2.1"
 androidx-lifecycle = "2.11.0"
 androidx-navigationevent = "1.1.2"
-androidx-splashscreen = "1.2.0"
 coil = "3.6.1"
 compose-media-player = "0.11.4"
 compose-multiplatform = "1.12.0"
@@ -29,7 +28,6 @@ androidx-datastore-preferences = { module = "androidx.datastore:datastore-prefer
 androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtime = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 androidx-navigationevent = { module = "androidx.navigationevent:navigationevent-compose", version.ref = "androidx-navigationevent" }
-androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-splashscreen" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-singleton = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
 compose-media-player = { module = "io.github.kdroidfilter:composemediaplayer", version.ref = "compose-media-player" }
