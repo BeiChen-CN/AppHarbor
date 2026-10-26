@@ -1,8 +1,8 @@
 object ProjectConfig {
     const val APP_NAME = "Trove"
     const val PACKAGE_NAME = "com.app.market"
-    const val VERSION_NAME = "2.14.0"
-    const val VERSION_CODE = 242
+    const val VERSION_NAME = "2.15.0"
+    const val VERSION_CODE = 243
     const val JVM_VERSION = 21
 
     object Android {
