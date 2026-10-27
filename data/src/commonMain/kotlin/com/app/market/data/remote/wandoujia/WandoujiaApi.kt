@@ -18,6 +18,9 @@ import com.app.market.domain.model.market.HistoricalVersionPage
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.ScreenshotOrientation
 import com.app.market.domain.model.market.SearchPage
+import com.app.market.domain.model.update.ManualUpdateRequest
+import com.app.market.domain.model.update.ManualUpdateResult
+import com.app.market.domain.model.update.ManualUpdateStatus
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.header
@@ -111,6 +114,59 @@ internal class WandoujiaApi(
 
     suspend fun checkUpdates(installed: List<InstalledPackage>): List<MarketAppInfo> {
         if (installed.isEmpty()) return emptyList()
+        val root = postCheckUpdates(installed)
+        val installedByPackage = installed.associateBy(InstalledPackage::packageName)
+        val updates = root.wdjObject("data").wdjArray("content")
+        return (0 until (updates?.size ?: 0)).mapNotNull { index ->
+            val json = updates.wdjObjectAt(index) ?: return@mapNotNull null
+            val local = installedByPackage[json.wdjString("packageName")] ?: return@mapNotNull null
+            val remote = parseWandoujiaApp(json, detailSizeInKib = true) ?: return@mapNotNull null
+            if (remote.versionCode <= local.versionCode) return@mapNotNull null
+            remote.copy(
+                installedVersionName = local.versionName,
+                installedVersionCode = local.versionCode,
+                installedBaseApkPath = local.baseApkPath,
+                installedSplits = local.splits,
+                isSystemApp = local.isSystemApp,
+            )
+        }
+    }
+
+    /**
+     * 单个包名的手动更新查询：复用批量协议，只提交一个包。
+     *
+     * 豌豆荚搜索不认包名（只有部分应用能被包名命中），走 checkUpdateV1 才可靠。
+     */
+    suspend fun checkManualUpdate(request: ManualUpdateRequest): ManualUpdateResult {
+        val installed = InstalledPackage(
+            packageName = request.packageName,
+            versionCode = request.versionCode,
+            isSystemApp = request.isSystemApp,
+            versionName = request.versionName,
+            splits = request.splits,
+        )
+        val root = postCheckUpdates(listOf(installed))
+        val updates = root.wdjObject("data").wdjArray("content")
+        val json = (0 until (updates?.size ?: 0)).mapNotNull { updates.wdjObjectAt(it) }
+            .firstOrNull { it.wdjString("packageName").equals(request.packageName, ignoreCase = true) }
+            ?: return ManualUpdateResult(ManualUpdateStatus.NOT_FOUND)
+        val remote = parseWandoujiaApp(json, detailSizeInKib = true)
+            ?: return ManualUpdateResult(ManualUpdateStatus.NOT_FOUND)
+        if (remote.versionCode <= request.versionCode) {
+            return ManualUpdateResult(ManualUpdateStatus.RECOGNIZED_NO_UPDATE)
+        }
+        return ManualUpdateResult(
+            ManualUpdateStatus.UPDATE_AVAILABLE,
+            remote.copy(
+                installedVersionName = request.versionName,
+                installedVersionCode = request.versionCode,
+                installedSplits = request.splits,
+                isSystemApp = request.isSystemApp,
+            ),
+        )
+    }
+
+    private suspend fun postCheckUpdates(installed: List<InstalledPackage>): JsonObject {
         val content = buildJsonArray {
             installed.forEach { app ->
                 add(buildJsonObject {
@@ -138,21 +194,7 @@ internal class WandoujiaApi(
         }
         val root = postM90("/api/resource.app.checkUpdateV1", envelope)
         requireSuccess(root, "更新检查")
-        val installedByPackage = installed.associateBy(InstalledPackage::packageName)
-        val updates = root.wdjObject("data").wdjArray("content")
-        return (0 until (updates?.size ?: 0)).mapNotNull { index ->
-            val json = updates.wdjObjectAt(index) ?: return@mapNotNull null
-            val local = installedByPackage[json.wdjString("packageName")] ?: return@mapNotNull null
-            val remote = parseWandoujiaApp(json, detailSizeInKib = true) ?: return@mapNotNull null
-            if (remote.versionCode <= local.versionCode) return@mapNotNull null
-            remote.copy(
-                installedVersionName = local.versionName,
-                installedVersionCode = local.versionCode,
-                installedBaseApkPath = local.baseApkPath,
-                installedSplits = local.splits,
-                isSystemApp = local.isSystemApp,
-            )
-        }
+        return root
     }
 
     suspend fun historicalVersions(

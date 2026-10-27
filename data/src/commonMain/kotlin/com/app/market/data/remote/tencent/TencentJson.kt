@@ -15,7 +15,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.longOrNull
 
-internal data class TencentDetail(val detail: AppDetail, val url: String, val checksum: String)
+internal data class TencentDetail(val detail: AppDetail, val url: String, val checksum: String, val abis: List<String> = emptyList())
 
 internal fun parseTencentSearch(html: String): SearchPage {
     val script = Regex("<script\\b[^>]*\\bid\\s*=\\s*[\"']__NEXT_DATA__[\"'][^>]*>(.*?)</script>",
@@ -96,7 +96,37 @@ internal fun parseTencentDetail(text: String, packageName: String): TencentDetai
         url = url,
         checksum = apk.text("sha256").takeIf { it.matches(Regex("[a-fA-F0-9]{64}")) }
             ?: apk.text("apk_md5").takeIf { it.matches(Regex("[a-fA-F0-9]{32}")) }.orEmpty(),
+        abis = tencentAbis(apk.text("platform")),
     )
+}
+
+/**
+ * 把应用宝 `apk_all_data.platform` 位掩码翻译成原生库 ABI 列表。
+ *
+ * `platform` 描述的是「这个被托管的包内含哪些 ABI」，不是可以请求的偏好参数，
+ * 所以改参数拿不到另一个变体。实测 12 个包零例外地符合下列位含义：
+ * 256 = armeabi、512 = armeabi-v7a、1024 = arm64-v8a、2048 = x86。
+ *
+ * | 包 | platform | 实测 ABI |
+ * | --- | --- | --- |
+ * | com.tencent.mm | 1026 | arm64-v8a |
+ * | com.taobao.taobao | 1539 | arm64-v8a + armeabi-v7a |
+ * | com.eg.android.AlipayGphone | 257 | armeabi |
+ * | com.xingin.xhs | 513 | armeabi-v7a |
+ * | tv.danmaku.bili | 2561 | armeabi-v7a + x86 |
+ *
+ * 低两位（1、2）始终出现在不同组合里但含义未知，与 ABI 判定无关，直接忽略。
+ * 解析不出已知位时返回空列表，调用方按「未知」处理，不误判成 32 位。
+ */
+internal fun tencentAbis(raw: String): List<String> {
+    val mask = raw.trim().toIntOrNull() ?: return emptyList()
+    if (mask <= 0) return emptyList()
+    return buildList {
+        if (mask and 256 != 0) add("armeabi")
+        if (mask and 512 != 0) add("armeabi-v7a")
+        if (mask and 1024 != 0) add("arm64-v8a")
+        if (mask and 2048 != 0) add("x86")
+    }
 }
 
 internal fun tencentHttpsUrl(raw: String): String = when {

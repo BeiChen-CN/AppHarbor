@@ -327,6 +327,7 @@
     <string name="aggregate_updates">Aggregate updates</string>
     <string name="aggregate_updates_summary">Find the latest eligible version across selected sources</string>
     <string name="aggregate_status">Checked %1$d / %2$d sources</string>
+    <string name="aggregate_active_sources">Checking %1$s</string>
     <string name="aggregate_failed_sources">Some sources failed: %1$s</string>
     <string name="comment_source">Comment source</string>
     <string name="comment_source_summary">Select comments independently of the app download source</string>

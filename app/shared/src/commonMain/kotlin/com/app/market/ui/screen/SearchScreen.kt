@@ -21,11 +21,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -74,21 +74,22 @@ import com.app.market.resources.search_sources
 import com.app.market.resources.switch_search_source
 import com.app.market.resources.update
 import com.app.market.ui.component.AdaptiveTopAppBar
-import com.app.market.ui.component.AppTextButton
 import com.app.market.ui.component.AppRow
 import com.app.market.ui.component.LoadingBox
 import com.app.market.ui.component.PageVerticalPadding
+import com.app.market.ui.component.SourcePickerDialog
 import com.app.market.ui.component.blur.BlurredBar
 import com.app.market.ui.component.blur.rememberBlurBackdrop
 import com.app.market.ui.model.AppActionKind
-import com.app.market.ui.util.installActionText
 import com.app.market.ui.util.appSourceLabel
+import com.app.market.ui.util.installActionText
 import com.app.market.ui.util.rememberIsWideScreen
 import com.app.market.viewmodel.SearchUiState
 import com.app.market.viewmodel.SearchViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -97,11 +98,9 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.preference.RadioButtonPreference
-import top.yukonga.miuix.kmp.preference.RadioButtonLocation
-import top.yukonga.miuix.kmp.window.WindowDialog
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import kotlin.math.roundToInt
@@ -199,14 +198,16 @@ fun SearchTab(
                     color = barColor,
                     scrollBehavior = scrollBehavior,
                     actions = {
-                        AppTextButton(
-                            text = stringResource(Res.string.switch_search_source),
-                            onClick = {
-                                dismissSearchInput()
-                                showSourcePicker = true
-                            },
-                            modifier = Modifier.padding(end = 12.dp),
-                        )
+                        // 与推荐页保持一致：顶栏用图标按钮打开换源，而不是文字按钮。
+                        IconButton(onClick = {
+                            dismissSearchInput()
+                            showSourcePicker = true
+                        }) {
+                            Icon(
+                                imageVector = MiuixIcons.Replace,
+                                contentDescription = stringResource(Res.string.switch_search_source),
+                            )
+                        }
                     },
                     bottomContent = {
                         Row(
@@ -294,32 +295,15 @@ fun SearchTab(
             }
         }
     }
-    WindowDialog(
+    // 与推荐页共用同一个来源选择器：单选项、选中即关闭。
+    SourcePickerDialog(
         show = showSourcePicker,
         title = stringResource(Res.string.search_sources),
-        onDismissRequest = { showSourcePicker = false },
-    ) {
-        Column {
-            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp).scrollEndHaptic().overScrollVertical()) {
-                items(AppSource.entries, key = { it.token }) { source ->
-                    RadioButtonPreference(
-                        title = appSourceLabel(source),
-                        selected = source in state.sources,
-                        radioButtonLocation = RadioButtonLocation.End,
-                        onClick = {
-                            viewModel.setSearchSource(source)
-                            showSourcePicker = false
-                        },
-                    )
-                }
-            }
-            AppTextButton(
-                text = stringResource(Res.string.cancel),
-                onClick = { showSourcePicker = false },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
+        options = AppSource.entries,
+        selected = state.sources.firstOrNull(),
+        onSelect = { source -> source?.let(viewModel::setSearchSource) },
+        onDismiss = { showSourcePicker = false },
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
@@ -453,6 +437,17 @@ private fun SearchResultsList(
             }
         }
 
+        // 搜索出结果后，在结果上方铺一排来源快捷入口：点一下直接换源并重搜，
+        // 不必先开顶栏的换源对话框。仅在有关键词时出现，避免干扰历史记录界面。
+        if (state.keyword.isNotBlank() || state.activeKeyword.isNotBlank()) {
+            item(key = "source-shortcuts") {
+                SourceShortcutRow(
+                    selected = state.sources.firstOrNull(),
+                    onSelect = viewModel::setSearchSource,
+                )
+            }
+        }
+
         items(state.results, key = { it.app.packageName }) { item ->
             val app = item.app
             val packageName = app.packageName
@@ -485,3 +480,53 @@ private fun SearchResultsList(
         }
     }
 }
+
+/**
+ * 搜索结果上方的来源快捷入口。
+ *
+ * 横向滚动的一排胶囊，选中的高亮；点未选中的项直接换源并触发重搜。
+ * 候选项与顶栏换源对话框保持同一组（全部来源），避免两处口径不一致。
+ */
+@Composable
+private fun SourceShortcutRow(
+    selected: AppSource?,
+    onSelect: (AppSource) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp),
+    ) {
+        items(SearchShortcutSources, key = { it.token }) { source ->
+            val isSelected = source == selected
+            Box(
+                modifier = Modifier
+                    .squircleSurface(
+                        color = if (isSelected) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.surfaceContainer
+                        },
+                        cornerRadius = 14.dp,
+                    )
+                    .clickable(interactionSource = null, indication = null) {
+                        if (!isSelected) onSelect(source)
+                    },
+            ) {
+                Text(
+                    text = appSourceLabel(source),
+                    style = MiuixTheme.textStyles.body2,
+                    color = if (isSelected) {
+                        MiuixTheme.colorScheme.onPrimary
+                    } else {
+                        MiuixTheme.colorScheme.onSurfaceVariantSummary
+                    },
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+            }
+        }
+    }
+}
+
+/** 搜索结果页快捷换源可选的来源；与顶栏换源对话框保持同一组（全部来源）。 */
+private val SearchShortcutSources: List<AppSource> = AppSource.entries

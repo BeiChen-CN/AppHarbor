@@ -25,6 +25,7 @@ internal class FeaturePreferencesRepositoryImpl(
 
     init {
         scope.launch {
+            migrateAggregateSources()
             combine(preferences.observe(Aggregate), preferences.observe(Comments),
                 preferences.observe(Recommendations), preferences.observe(UpdatePreferenceKeys.TodaySource)) { aggregate, comments, recommendations, legacyToday ->
                 FeaturePreferences(aggregate,
@@ -105,6 +106,32 @@ internal class FeaturePreferencesRepositoryImpl(
     }
 
     /**
+     * 把「本次版本新开放的更新来源」补进已选集合，且只补一次。
+     *
+     * 背景：能力位变化（例如豌豆荚开始支持批量更新）后，老用户的存储里不会有它，
+     * 而 [restoreSourceOrder] 为了不撤销用户的手动取消勾选，刻意不回填未列出的来源。
+     * 这里用 [SourcesMigration] 记录已执行过的迁移 ID，逐个 ID 精确补齐：
+     * 升级后只补这条迁移声明新增的来源，不会顺手把用户早先取消勾选的其它来源一起恢复。
+     */
+    private suspend fun migrateAggregateSources() {
+        val rawDone = preferences.read(SourcesMigration)
+        val done = rawDone.orEmpty().split(',').filter { it.isNotBlank() }.toSet()
+        val pending = AggregateSourceMigrations.filterNot { it.id in done }
+        if (pending.isEmpty()) return
+        val current = UpdateSources
+        val stored = preferences.read(Sources).orEmpty().split(',')
+            .mapNotNull(AppSource::fromToken).filter { it in current }.distinct()
+        // 存储为空说明用户从未调整过，restoreSourceOrder 会退回默认全集，无需写入。
+        if (stored.isNotEmpty()) {
+            val added = pending.flatMap { it.sources }.filter { it in current && it !in stored }
+            if (added.isNotEmpty()) {
+                preferences.put(Sources, (stored + added).distinct().joinToString(",") { it.token })
+            }
+        }
+        preferences.put(SourcesMigration, (done + pending.map { it.id }).joinToString(","))
+    }
+
+    /**
      * 恢复存储的来源与顺序。
      *
      * 语义是「参与聚合的来源子集 + 优先级顺序」：未列出的来源视为未选中，不补回队尾，
@@ -116,16 +143,30 @@ internal class FeaturePreferencesRepositoryImpl(
         return stored.ifEmpty { UpdateSources }
     }
 
+    private class SourcesMigrationEntry(val id: String, val sources: List<AppSource>)
+
     private companion object {
         val Aggregate = BooleanPreferenceKey("features", "aggregate_updates")
         val Comments = StringPreferenceKey("features", "comment_source")
         val Recommendations = StringPreferenceKey("features", "recommendation_source")
         val Prereleases = BooleanPreferenceKey("features", "include_prerelease_updates")
         val Sources = StringPreferenceKey("features", "aggregate_sources")
+        /** 已执行过的来源补齐迁移 ID，逗号分隔；新迁移只需追加一个不重复的 ID。 */
+        val SourcesMigration = StringPreferenceKey("features", "aggregate_sources_migrations")
         val Pinned = StringPreferenceKey("features", "preferred_update_sources")
         val Unmetered = BooleanPreferenceKey("features", "only_unmetered_downloads")
         val MeteredPrompt = BooleanPreferenceKey("features", "metered_download_prompt", default = true)
         val HiddenTabs = StringPreferenceKey("features", "hidden_main_tabs")
         val RecommendationUpdates = BooleanPreferenceKey("features", "recommendation_updates", default = true)
+
+        /**
+         * 历次「新开放更新能力」的来源清单，供 [migrateAggregateSources] 精确补齐。
+         *
+         * `wandoujia-updates`：豌豆荚的 `resource.app.checkUpdateV1` 批量更新协议上线，
+         * `supportsUpdates` 由 false 改为 true。
+         */
+        val AggregateSourceMigrations = listOf(
+            SourcesMigrationEntry("wandoujia-updates", listOf(AppSource.WANDOUJIA)),
+        )
     }
 }

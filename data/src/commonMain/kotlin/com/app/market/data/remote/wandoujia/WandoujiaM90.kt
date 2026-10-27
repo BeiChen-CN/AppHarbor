@@ -12,6 +12,14 @@ internal fun wandoujiaM90EncodeRequest(data: ByteArray, seed: Int = Random.nextI
 internal fun wandoujiaM90DecodeResponse(data: ByteArray): ByteArray =
     wandoujiaM90Decode(data = data, key = ResponseKey)
 
+/** 按请求密钥解密，仅用于测试检查发出去的报文。 */
+internal fun wandoujiaM90DecodeRequest(data: ByteArray): ByteArray =
+    wandoujiaM90Decode(data = data, key = RequestKey)
+
+/** 按服务端响应密钥加密，仅用于测试构造应答。 */
+internal fun wandoujiaM90EncodeResponse(data: ByteArray, seed: Int = 0): ByteArray =
+    wandoujiaM90Encode(type = 31, data = data, key = ResponseKey, seed = seed)
+
 internal fun wandoujiaM90Encode(type: Int, data: ByteArray, key: ByteArray, seed: Int): ByteArray {
     require(key.size == 16)
     val state = IntArray(8) { key[it].toInt() and 0xff }

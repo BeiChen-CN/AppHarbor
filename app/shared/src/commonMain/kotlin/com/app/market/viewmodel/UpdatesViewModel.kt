@@ -52,6 +52,8 @@ data class UpdatesUiState(
     val failures: Map<AppSource, SourceCheckFailure> = emptyMap(),
     val sourceResults: Map<AppSource, List<MarketAppInfo>> = emptyMap(),
     val cancelled: Boolean = false,
+    /** 正在请求中的来源，界面据此显示「正在检查 X」。 */
+    val activeSources: Set<AppSource> = emptySet(),
 )
 
 /** Raw (unfiltered) update-check result. The visible [UpdatesUiState] is derived from this + prefs. */
@@ -66,6 +68,8 @@ private data class RawUpdates(
     val failures: Map<AppSource, SourceCheckFailure> = emptyMap(),
     val sourceResults: Map<AppSource, List<MarketAppInfo>> = emptyMap(),
     val cancelled: Boolean = false,
+    /** 正在请求中的来源，界面据此显示「正在检查 X」。 */
+    val activeSources: Set<AppSource> = emptySet(),
 )
 
 class UpdatesViewModel(
@@ -198,7 +202,7 @@ class UpdatesViewModel(
 
     fun cancelCheck() {
         checkJob?.cancel()
-        _raw.update { it.copy(loading = false, cancelled = true, checkFailed = false) }
+        _raw.update { it.copy(loading = false, cancelled = true, checkFailed = false, activeSources = emptySet()) }
     }
 
     fun retryFailedSources() {
@@ -220,6 +224,7 @@ class UpdatesViewModel(
                 val retained = if (retryOnly) _raw.value.sourceResults.filterKeys { it !in requested } else emptyMap()
                 _raw.update {
                     it.copy(failedSources = emptySet(), failures = emptyMap(), sourceResults = retained,
+                        activeSources = emptySet(),
                         sourcesCompleted = if (retryOnly) selected.size - requested.size else 0,
                         sourcesTotal = if (settings.aggregateUpdates) selected.size else 0)
                 }
@@ -227,9 +232,11 @@ class UpdatesViewModel(
                     sources.aggregateUpdatesFlow(requested, settings.updateSelectionPolicy, retained).collect { result ->
                         _raw.update { it.copy(all = result.updates, failedSources = result.failedSources,
                             failures = result.failures, sourceResults = result.sourceResults,
+                            activeSources = result.activeSources,
                             sourcesCompleted = selected.size - requested.size + result.completed, sourcesTotal = selected.size) }
                     }
-                    _raw.update { it.copy(loading = false, checkFailed = it.sourcesTotal > 0 && it.failedSources.size == it.sourcesTotal) }
+                    _raw.update { it.copy(loading = false, activeSources = emptySet(),
+                        checkFailed = it.sourcesTotal > 0 && it.failedSources.size == it.sourcesTotal) }
                     return@launch
                 }
                 var latestLiveUpdates: List<MarketAppInfo>? = null
@@ -322,6 +329,7 @@ class UpdatesViewModel(
             failures = raw.failures,
             sourceResults = raw.sourceResults,
             cancelled = raw.cancelled,
+            activeSources = raw.activeSources,
         )
     }
 }

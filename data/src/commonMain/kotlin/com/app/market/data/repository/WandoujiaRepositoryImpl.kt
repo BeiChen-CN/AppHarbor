@@ -8,6 +8,8 @@ import com.app.market.domain.model.market.HistoricalVersion
 import com.app.market.domain.model.market.HistoricalVersionPage
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.domain.model.market.SearchPage
+import com.app.market.domain.model.update.ManualUpdateRequest
+import com.app.market.domain.model.update.ManualUpdateResult
 import com.app.market.domain.repository.InstalledPackagesRepository
 import com.app.market.domain.repository.WandoujiaRepository
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +34,11 @@ internal class WandoujiaRepositoryImpl(
     override suspend fun checkUpdates(): List<MarketAppInfo> = withContext(Dispatchers.Default) {
         api.checkUpdates(installedPackages.installed())
     }
+
+    override suspend fun checkManualUpdate(request: ManualUpdateRequest): ManualUpdateResult =
+        withContext(Dispatchers.Default) {
+            api.checkManualUpdate(request)
+        }
 
     override suspend fun historicalVersions(
         appId: Long,

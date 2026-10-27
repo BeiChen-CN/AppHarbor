@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.app.market.domain.model.download.DownloadPhase
 import com.app.market.domain.model.download.DownloadState
 import com.app.market.domain.model.market.MarketAppInfo
 import com.app.market.platform.UiPlatform
@@ -149,7 +150,27 @@ private fun LazyListScope.updateCheckStatus(state: UpdatesUiState, aggregate: Bo
         CardSegmentContainer(isFirst = true, isLast = headerLast, horizontalPadding = 0.dp,
             modifier = Modifier.padding(bottom = if (headerLast) 20.dp else 0.dp)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (aggregate) Text(stringResource(Res.string.aggregate_status, state.sourcesCompleted, state.sourcesTotal))
+                if (aggregate) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(stringResource(Res.string.aggregate_status, state.sourcesCompleted, state.sourcesTotal))
+                        // 有来源还在请求时补一句「正在检查 X」，让用户知道进度卡在哪一步。
+                        if (state.loading && state.activeSources.isNotEmpty()) {
+                            // joinToString 不是 inline，lambda 里调不了 @Composable，先 map 出标签再拼。
+                            val activeLabels = state.activeSources.map { appSourceLabel(it) }.joinToString("、")
+                            Text(
+                                text = stringResource(Res.string.aggregate_active_sources, activeLabels),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                style = MiuixTheme.textStyles.body2,
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
+                    }
+                }
                 if (state.cancelled) Text(stringResource(Res.string.check_cancelled_hint))
             }
         }
@@ -348,18 +369,35 @@ private fun UpdateItemRow(
                     )
                 }
             }
-            AppActionButton(
-                packageName = app.packageName,
-                actionText = actionText,
-                actionKind = AppActionKind.UPDATE,
-                downloadState = downloadState,
-                onAction = onAction,
-                onResumeDownload = onAction,
-                onInstallDownloaded = onInstallDownloaded,
-                onCancel = onCancel,
-                minHeight = 34.dp,
-                insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // 暂停态下进度按钮只能恢复下载，这里单独给一个取消入口，
+                // 避免「只能暂停不能取消」。安装阶段没有可取消的传输，不显示该按钮。
+                if (downloadState != null &&
+                    downloadState.phase != DownloadPhase.INSTALLING &&
+                    downloadState.phase != DownloadPhase.AWAITING_USER_ACTION &&
+                    downloadState.phase != DownloadPhase.DOWNLOADED
+                ) {
+                    AppTextButton(
+                        text = stringResource(Res.string.cancel),
+                        onClick = { onCancel(app.packageName) },
+                        minHeight = 34.dp,
+                        insideMargin = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                }
+                AppActionButton(
+                    packageName = app.packageName,
+                    actionText = actionText,
+                    actionKind = AppActionKind.UPDATE,
+                    downloadState = downloadState,
+                    onAction = onAction,
+                    onResumeDownload = onAction,
+                    onInstallDownloaded = onInstallDownloaded,
+                    onCancel = onCancel,
+                    minHeight = 34.dp,
+                    insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                )
+            }
         }
         Box(Modifier.fillMaxWidth()) {
             SelectionContainer(modifier = Modifier.fillMaxWidth()) {

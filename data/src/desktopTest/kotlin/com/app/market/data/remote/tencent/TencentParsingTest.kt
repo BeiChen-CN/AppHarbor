@@ -80,4 +80,27 @@ class TencentParsingTest {
         assertFailsWith<MarketException> { parseTencentSearch("<html>Captcha</html>") }
         assertFalse(parseTencentSearch(searchHtml("")).hasMore)
     }
+
+    @Test
+    fun platformMaskIsReadAsHostedAbis() {
+        // 掩码是「被托管的包内含哪些 ABI」，实测值来自 12 个包的真实 ABI 抓取。
+        assertEquals(listOf("arm64-v8a"), tencentAbis("1026"))
+        assertEquals(listOf("armeabi-v7a", "arm64-v8a"), tencentAbis("1539"))
+        assertEquals(listOf("armeabi"), tencentAbis("257"))
+        assertEquals(listOf("armeabi-v7a"), tencentAbis("513"))
+        assertEquals(listOf("armeabi-v7a", "x86"), tencentAbis("2561"))
+        // 拿不到或解析不出时按「未知」处理，不误判成 32 位。
+        assertEquals(emptyList(), tencentAbis(""))
+        assertEquals(emptyList(), tencentAbis("0"))
+        assertEquals(emptyList(), tencentAbis("abc"))
+    }
+
+    @Test
+    fun detailCarriesHostedAbisAndDownloadMetaExposes32BitOnly() {
+        val detail = parseTencentDetail(
+            TencentTestDetail.replace("\"apk_md5\"", "\"platform\":\"513\",\"apk_md5\""),
+            TencentPackage,
+        )
+        assertEquals(listOf("armeabi-v7a"), detail.abis)
+    }
 }

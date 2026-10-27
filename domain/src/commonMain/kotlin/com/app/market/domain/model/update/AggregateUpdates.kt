@@ -24,6 +24,8 @@ data class AggregateUpdates(
     val total: Int = 0,
     val sourceResults: Map<AppSource, List<MarketAppInfo>> = emptyMap(),
     val failures: Map<AppSource, SourceCheckFailure> = emptyMap(),
+    /** 正在请求（已拿到并发槽位、尚未返回）的来源，用于界面显示「正在检查 X」。 */
+    val activeSources: Set<AppSource> = emptySet(),
 )
 
 enum class SourceCheckFailure { TIMEOUT, REQUEST_FAILED }
@@ -45,15 +47,18 @@ fun MarketSourceRepository.aggregateUpdatesFlow(
     val lock = Mutex()
     val latest = initialResults.toMutableMap()
     val failures = mutableMapOf<AppSource, SourceCheckFailure>()
+    // 已拿到并发槽位、仍在请求中的来源；界面据此显示「正在检查 X」。
+    val active = mutableSetOf<AppSource>()
     var completed = 0
     suspend fun publish() {
         send(AggregateUpdates(selectLatestUpdates(latest.values.flatten(), policy), failures.keys.toSet(), completed,
-            selected.size, latest.toMap(), failures.toMap()))
+            selected.size, latest.toMap(), failures.toMap(), active.toSet()))
     }
     publish()
     selected.forEach { source ->
         launch {
             slots.withPermit {
+                lock.withLock { active += source; publish() }
                 try {
                     withTimeout(timeoutMillis) {
                         checkUpdatesFlow(source).collect { apps ->
@@ -69,7 +74,7 @@ fun MarketSourceRepository.aggregateUpdatesFlow(
                 } catch (_: Exception) {
                     lock.withLock { failures[source] = SourceCheckFailure.REQUEST_FAILED }
                 }
-                lock.withLock { completed++; publish() }
+                lock.withLock { active -= source; completed++; publish() }
             }
         }
     }

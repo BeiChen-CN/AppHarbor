@@ -72,6 +72,7 @@ internal class TencentApi(private val client: HttpClient, private val config: Te
             parts = listOf(DownloadPart("", "base", record.url, current.apkSize, hash = record.checksum)),
             installedBaseApkPath = app.installedBaseApkPath, icon = current.icon, changeLog = current.changeLog,
             source = current.source, requestHeaders = mapOf(HttpHeaders.UserAgent to UserAgent),
+            abis = record.abis,
         )
     }
 

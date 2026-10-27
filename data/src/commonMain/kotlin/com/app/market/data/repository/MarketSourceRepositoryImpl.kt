@@ -202,7 +202,9 @@ internal class MarketSourceRepositoryImpl(
         AppSource.BOX7723 -> box7723.downloadMeta(app)
         AppSource.FDROID -> fdroid.downloadMeta(app)
         AppSource.COOLAPK -> coolapk.downloadMeta(app)
-        AppSource.TENCENT -> tencent.downloadMeta(app)
+        AppSource.TENCENT -> rescueIfOnly32Bit(tencent.downloadMeta(app)) {
+            market.downloadMeta(app.onXiaomi(), keyword)
+        }
         AppSource.IZZYONDROID -> izzy.downloadMeta(app)
         AppSource.FDROID_TUNA -> tuna.downloadMeta(app)
         AppSource.GITHUB, AppSource.GITLAB -> releases.downloadMeta(source, app)
@@ -215,8 +217,8 @@ internal class MarketSourceRepositoryImpl(
     override suspend fun downloadUpdateMeta(source: AppSource, app: MarketAppInfo): DownloadMeta = when (source) {
         AppSource.XIAOMI -> market.downloadUpdateMeta(app)
         AppSource.VIVO -> vivo.downloadUpdateMeta(app)
-        // 豌豆荚无原生更新元数据协议，回退小米商店解析
-        AppSource.WANDOUJIA -> market.downloadUpdateMeta(app.onXiaomi())
+        // 批量更新来自豌豆荚自己的协议，下载元数据也用豌豆荚详情解析，避免重新按包名去小米找
+        AppSource.WANDOUJIA -> wandoujia.downloadMeta(app)
         // 好游快爆网页渠道不暴露版本号，同样回退小米
         AppSource.KUAIBAO -> market.downloadUpdateMeta(app.onXiaomi())
         AppSource.APPCHINA -> appchina.downloadMeta(app)
@@ -229,7 +231,9 @@ internal class MarketSourceRepositoryImpl(
         // F-Droid / 酷安使用自身全量下载解析。
         AppSource.FDROID -> fdroid.downloadMeta(app)
         AppSource.COOLAPK -> coolapk.downloadMeta(app)
-        AppSource.TENCENT -> tencent.downloadMeta(app)
+        AppSource.TENCENT -> rescueIfOnly32Bit(tencent.downloadMeta(app)) {
+            market.downloadUpdateMeta(app.onXiaomi())
+        }
         AppSource.IZZYONDROID -> izzy.downloadMeta(app)
         AppSource.FDROID_TUNA -> tuna.downloadMeta(app)
         AppSource.GITHUB, AppSource.GITLAB -> releases.downloadMeta(source, app)
@@ -270,8 +274,8 @@ internal class MarketSourceRepositoryImpl(
         when (source) {
             AppSource.XIAOMI -> market.checkManualUpdate(request)
             AppSource.VIVO -> vivo.checkManualUpdate(request)
-            // 豌豆荚无原生手动更新协议，回退小米商店解析
-            AppSource.WANDOUJIA -> market.checkManualUpdate(request)
+            // 豌豆荚用手动更新协议按包名单独查询，比搜索更可靠
+            AppSource.WANDOUJIA -> wandoujia.checkManualUpdate(request)
             AppSource.KUAIBAO -> market.checkManualUpdate(request)
             AppSource.APPCHINA -> appchina.checkManualUpdate(request)
             AppSource.BOX7723 -> market.checkManualUpdate(request)
@@ -346,6 +350,26 @@ internal class MarketSourceRepositoryImpl(
             AppSource.HAIS -> hais.historicalDownloadMeta(version)
             else -> throw MarketException("该来源不支持历史版本下载")
         }
+
+    /**
+     * 应用宝只托管 32 位包时改用小米源重取安装包。
+     *
+     * 应用宝的 `apk_all_data.platform` 是「被托管包内含哪些 ABI」的位掩码，
+     * 不是可请求的偏好参数——实测换 UA、加 `platform`/`cpuin`/`abi` 等几十个字段都返回同一个包，
+     * 说明 64 位变体根本没有暴露在接口上（支付宝、小红书、快手、京东、唯品会、知乎、B 站都是如此）。
+     * 因此这里不重试应用宝，而是直接换成按设备架构派发安装包的小米源，
+     * 让 64 位设备拿到 64 位包；小米也拿不到时保持应用宝的结果，不让下载整体失败。
+     */
+    private suspend fun rescueIfOnly32Bit(
+        tencentMeta: DownloadMeta,
+        fallback: suspend () -> DownloadMeta,
+    ): DownloadMeta {
+        if (!tencentMeta.is32BitOnly) return tencentMeta
+        // 小米按设备 cpuArchitecture 派发安装包，且不回报 ABI 列表；
+        // 换源失败或换回来的也没更像 64 位时，保留应用宝的结果不让下载整体失败。
+        val rescued = runCatching { fallback() }.getOrNull() ?: return tencentMeta
+        return if (rescued.is32BitOnly) tencentMeta else rescued
+    }
 
     private suspend fun MarketAppInfo.onXiaomi(): MarketAppInfo {
         if (source == AppSource.XIAOMI) return this

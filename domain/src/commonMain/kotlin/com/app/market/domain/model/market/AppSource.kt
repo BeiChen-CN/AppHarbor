@@ -40,8 +40,8 @@ enum class AppSource(val token: String, val capabilities: SourceCapabilities) {
             reportsDeltaSize = true,
             supportsTodayFeed = false,
             todayFullCoverOverlay = false,
-            // 豌豆荚无原生更新元数据协议，更新下载与手动更新均回退小米，不提供独立更新来源
-            supportsUpdates = false,
+            // 批量更新、手动更新与更新包下载都走豌豆荚自己的 checkUpdateV1 与详情接口
+            supportsUpdates = true,
             supportsHistoricalVersions = true,
         ),
     ),

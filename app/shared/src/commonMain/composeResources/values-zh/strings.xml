@@ -327,6 +327,7 @@
     <string name="aggregate_updates">聚合更新</string>
     <string name="aggregate_updates_summary">在所选来源中查找最新可用版本</string>
     <string name="aggregate_status">已检查 %1$d / %2$d 个来源</string>
+    <string name="aggregate_active_sources">正在检查 %1$s</string>
     <string name="aggregate_failed_sources">部分来源检查失败：%1$s</string>
     <string name="comment_source">评论来源</string>
     <string name="comment_source_summary">独立选择评论来源，不影响应用下载</string>
