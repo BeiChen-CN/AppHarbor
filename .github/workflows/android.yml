@@ -104,11 +104,11 @@ jobs:
         include:
           - target: windows-x64
             os: windows-latest
-            artifact-pattern: app/desktop/build/compose/binaries/main-release/msi/*.msi
+            artifact-pattern: app/desktop/build/compose/binaries/main/msi/*.msi
             artifact-name: trove-desktop-windows
           - target: linux-x64
             os: ubuntu-latest
-            artifact-pattern: app/desktop/build/compose/binaries/main-release/deb/*.deb
+            artifact-pattern: app/desktop/build/compose/binaries/main/deb/*.deb
             artifact-name: trove-desktop-linux
     steps:
       - name: Checkout Repository
@@ -136,7 +136,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          FILE=$(find app/desktop/build/compose/binaries/main-release -type f \( -name '*.msi' -o -name '*.deb' \) | head -n 1)
+          FILE=$(find app/desktop/build/compose/binaries/main -type f \( -name '*.msi' -o -name '*.deb' \) | head -n 1)
           if [ -n "$FILE" ]; then
             gh release upload "${GITHUB_REF_NAME}" "$FILE" --clobber
           fi

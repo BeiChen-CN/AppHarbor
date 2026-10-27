@@ -126,7 +126,10 @@ androidComponents {
         variant.outputs.forEach { output ->
             (output as? VariantOutputImpl)?.outputFileName?.set(
                 output.versionName.zip(output.versionCode) { versionName, versionCode ->
-                    "${ProjectConfig.APP_NAME}-v${versionName}(${versionCode})${if (variant.buildType == "debug") "_debug" else ""}.apk"
+                    // 用 `-<code>` 而不是 `(<code>)`：GitHub Release 会把括号改写掉，
+                    // 应用内更新检查靠文件名里的 versionCode 免去下载 APK 才能判断版本。
+                    val suffix = if (variant.buildType == "debug") "_debug" else ""
+                    "${ProjectConfig.APP_NAME}-v${versionName}-${versionCode}${suffix}.apk"
                 }
             )
         }
